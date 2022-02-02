@@ -45,6 +45,10 @@ class Query:
 
     def select(self, index_value, index_column, query_columns):
         pass
+        self.table
+        # select firstname, lastname, from people where lastname = Wallasch
+        # self.table = people in example, index_column = lastname in example, index_value = Wallasch, 
+        # query_columns = firstname, lastname in example
     """
     # Update a record with specified key and columns
     # Returns True if update is succesful
