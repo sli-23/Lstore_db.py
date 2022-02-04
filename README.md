@@ -8,7 +8,9 @@
 
 ## Instructors
 **Professor**: [Mohammad Sadoghi](https://expolab.org/)
+
 **Teaching Fellow**: Sajjad Rahnama
+
 **Teaching Fellow**: Shesha Vishnu Prasad
 
 # Contents 
