@@ -34,9 +34,13 @@
 
 ## L-Store Fundamentals
 ### Introduction
+
 ### Date Model
 
+---
 ### Bufferpool Management
+
+---
 ### Query_Interface
 
 ## Milestones
