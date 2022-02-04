@@ -47,15 +47,17 @@
 #### Presentation
 [Milestone 1: Single-threaded, In-memory L-Store](https://docs.google.com/presentation/d/1xfVZv24Y0t1clj_643fu7V2vQSKsAg_whh3AqZNLI50/edit?usp=sharing)
 
+---
 ### Milestone 2
 **Objectives**: Single-threaded, In-memory & Durable L-Store
 #### Presentation
 
+---
 ### Milestone 3
 **Objectives**: Multi-threaded, In-memory & Durable L-Store
 #### Presentation
 
-
+---
 ## Sources
 1. [ECS 165A: Database Systems - Winter 2022](https://expolab.org/ecs165a-winter2022.html)
 2. [Reference: Code Skeleton](https://github.com/msadoghi/165a-winter-2022)
