@@ -1,6 +1,6 @@
 # ECS 165A: L-Store
 
-## Team members
+## Team members & Contributors
 - **Zihao Huang** (Developer, Tester, System Architect)
 - **Qian Yao** (Developer, Tester, System Architect)
 - **Justin Wallasch** (Developer, Tester)
@@ -8,14 +8,12 @@
 
 ## Instructors
 **Professor**: [Mohammad Sadoghi](https://expolab.org/)
-
 **Teaching Fellow**: Sajjad Rahnama
-
 **Teaching Fellow**: Shesha Vishnu Prasad
 
 # Contents 
 - [ECS 165A: L-Store](#ecs-165a-l-store)
-  - [Team members](#team-members)
+  - [Team members & Contributors](#team-members--contributors)
   - [Instructors](#instructors)
 - [Contents](#contents)
   - [L-Store Fundamentals](#l-store-fundamentals)
