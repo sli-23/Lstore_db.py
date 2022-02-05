@@ -1,4 +1,4 @@
-from .config import *
+from lstore.config import *
 
 """
 the maximum record should be 4096 / 8 bytes

@@ -54,6 +54,21 @@ Lineage-based Data Store (**L-Store**) is a solution that combines the real-time
 **Objectives**: Single-threaded, In-memory L-Store
 * we focused on a simplified in-memory (volatile) implementation that provides basic relational data storage and querying capabilities.
 
+```python
+"""
+Data Model in Milestone 1:
+
+bd.py
+|
+pages.py
+|
+table.py
+|________Record
+|________Page Range, Base Pages & Tail Pages
+Query.py
+"""
+```
+
 **Project Description**: [Milestone 1](https://expolab.org/ecs165a-winter2022/milestones/Milestone1.pdf)
 
 #### Structure Overview

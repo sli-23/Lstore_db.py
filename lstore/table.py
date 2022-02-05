@@ -1,5 +1,5 @@
-from .index import Index
-from .config import *
+from lstore.index import Index
+from lstore.config import *
 from time import time
 
 #INDIRECTION_COLUMN = 0
