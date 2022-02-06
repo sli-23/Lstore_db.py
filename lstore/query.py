@@ -67,7 +67,17 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
+        """
+        # below is pseudo code
+        try:
+            row = self.table.get(primary_key)   // the row that corresponds with the given primary key
+            for record in row:            // don't start on the primary key index
+                record = columns[correct index]
+        except:
+            return False
+        """
         pass
+
 
     """
     :param start_range: int         # Start of the key range to aggregate 
