@@ -30,8 +30,13 @@ class Query:
     """
 
     def insert(self, *columns):
-        schema_encoding = '0' * self.table.num_columns
-        pass
+        columnsList = list(columns)
+        try:
+            self.table.base_write(columnsList)
+        else:
+            print('An error has occurred.')
+            return false
+        #schema_encoding = '0' * self.table.num_columns
 
     """
     # Read a record with specified key
