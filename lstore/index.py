@@ -8,9 +8,10 @@ from config import *
 class Index:
 
     def __init__(self, table):
-        # One index for each table. All our empty initially.
-        self.indices = [None] *  table.num_columns
-        pass
+        self.table = table
+        # One index for each table. All our empty tree object initially.
+        self.indices = [OOBTree() for _ in range(table.num_columns)]  # Give a default value for indices.
+
 
     """
     # returns the location of all records with the given value on column "column"

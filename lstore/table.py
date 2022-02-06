@@ -22,6 +22,7 @@ class Table:
         self.name = name
         self.key = key
         self.num_columns = num_columns
+        self.num_records = 0
         self.page_directory = {}
         self.index = Index(self)
         self.__init_page_directory()
@@ -77,11 +78,11 @@ class Table:
                     page = self.page_directory['base'][i][-1].get_current()
             page.write(value)
 
-    def tail_write(self, data, pege_index):
+    def tail_write(self, data, page_index):
         for i, value in enumerate(data):
-            if not self.page_directory['Tail'][i][pege_index][-1].has_capacity():
-                self.page_directory['Tail'][i][pege_index].append(Page())
-            self.page_directory['Tail'][i][pege_index][-1].write(value)
+            if not self.page_directory['Tail'][i][page_index][-1].has_capacity():
+                self.page_directory['Tail'][i][page_index].append(Page())
+            self.page_directory['Tail'][i][page_index][-1].write(value)
 
 a = Table('test',5,5)
  
