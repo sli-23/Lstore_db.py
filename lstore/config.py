@@ -1,14 +1,14 @@
 # Global Setting
 # Static Global Variables
-# Will update later
 
 # Page size: 4096b
-RECORD_MAXIMUM = 512
-
-# may move column variables in table.py after finishing table.py part
+PAGE_SIZE = 4096
+RECORDS_PER_PAGE = PAGE_SIZE / 8
+MAXPAGE = 16
 
 
 INDIRECTION_COLUMN = 0
 RID_COLUMN = 1
 TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 3
+DEFAULT_COLUMN = 4
