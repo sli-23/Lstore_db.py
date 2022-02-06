@@ -1,5 +1,6 @@
 from lstore.db import Database
 from lstore.query import Query
+from lstore.page import Page, MultiPage
 
 from random import choice, randint, sample, seed
 
@@ -12,18 +13,24 @@ db = Database()
 #       Here the first column would be student id and primary key
 grades_table = db.create_table('Grades', 5, 0)
 
-# Check how many columns
-print(grades_table.num_columns)
 
-# Check base pages default + # of columns
-for base_page in grades_table.page_directory['base']:
-    print(base_page)
+# simple query(inserted)
+records = {}
 
-# Check tail pages default + # of columns
-for tail_page in grades_table.page_directory['tail']:
-    print(tail_page)
+number_of_records = 10
+number_of_aggregates = 100
+seed(3562901)
 
-# Check key columns
-print(grades_table.key)
+for i in range(0, number_of_records):
+    key = 92106429 + randint(0, number_of_records)
 
+    #skip duplicate keys
+    while key in records:
+        key = 92106429 + randint(0, number_of_records)
 
+    records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
+
+records
+
+# insert 1 record
+records_test = [92106433, 1, 14, 1, 19]
