@@ -22,7 +22,11 @@ class Query:
     """
 
     def delete(self, primary_key):
-        pass
+        try:
+            columns.delete(rid)
+        except:
+            return False
+    
     """
     # Insert a record with specified columns
     # Return True upon succesful insertion
