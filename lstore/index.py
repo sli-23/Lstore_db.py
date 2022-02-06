@@ -3,7 +3,7 @@ A data strucutre holding indices for various columns of a table. Key column shou
 """
 
 from BTrees.OOBTree import OOBTree
-from config import *
+from lstore.config import *
 
 class Index:
 
@@ -44,7 +44,7 @@ class Index:
     # optional: Drop index of specific column
     """
 
-    def drop_index(self, column_number):
+    def drop_index(self, column_number, key, index):
         # update value "index" to the key of No.column_number.
         self.indices[column_number].update({key: index})
     
