@@ -38,6 +38,7 @@ class Query:
         columnsList = list(columns)
         try:
             self.table.base_write(columnsList)
+            self.num_records += 1
         except:
             print('An error has occurred.')
             return false
