@@ -1,6 +1,6 @@
-from lstore.index import Index
-from lstore.config import *
-from lstore.page import Page, MultiPage
+from index import Index
+from config import *
+from page import Page, MultiPage
 from time import time
 
 class Record:
@@ -86,3 +86,4 @@ class Table:
 
 a = Table('test',5,5)
  
+a

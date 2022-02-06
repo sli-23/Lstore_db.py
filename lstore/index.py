@@ -3,7 +3,7 @@ A data strucutre holding indices for various columns of a table. Key column shou
 """
 
 from BTrees.OOBTree import OOBTree
-from lstore.config import *
+from config import *
 
 class Index:
 
