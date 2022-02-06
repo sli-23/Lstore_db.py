@@ -33,7 +33,7 @@ class Query:
         columnsList = list(columns)
         try:
             self.table.base_write(columnsList)
-        else:
+        except:
             print('An error has occurred.')
             return false
         #schema_encoding = '0' * self.table.num_columns
