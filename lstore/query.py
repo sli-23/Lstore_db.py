@@ -24,6 +24,7 @@ class Query:
     def delete(self, primary_key):
         try:
             columns.delete(rid)
+            self.num_records -= 1
         except:
             return False
     
