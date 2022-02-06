@@ -1,6 +1,6 @@
-from index import Index
-from config import *
-from page import Page, MultiPage
+from lstore.index import Index
+from lstore.config import *
+from lstore.page import Page, MultiPage
 from time import time
 
 class Record:
@@ -38,7 +38,7 @@ class Table:
         example: R3 - (PR)(BP)(16)
 
         Data modelling:
-       | RID | COL | COL | TIMESTAMP_COLUMN | SCHEMA_ENCODING_COLUMN | INDIRECTION |
+       | RID | COL0 | COL1 | TIMESTAMP_COLUMN | SCHEMA_ENCODING_COLUMN | INDIRECTION |
 
         """
         self.page_directory = {'base':[],'tail':[]}
@@ -51,9 +51,9 @@ class Table:
         print("merge is happening")
         pass
 
-    def get_tail(self, indirection, column, pege_index):
+    def get_tail(self, indirection, column, page_index):
         indirection_int = int(str(indirection.decode()).split('\x00')[-1])    # Covert byte to int
-        return int.from_bytes(self.page_directory["Tail"][column + DEFAULT_COLUMN][pege_index][indirection_int // DEFAULT_COLUMN].get(indirection_int % RECORDS_PER_PAGE), byteorder='big')
+        return int.from_bytes(self.page_directory["Tail"][column + DEFAULT_COLUMN][page_index][indirection_int // DEFAULT_COLUMN].get(indirection_int % RECORDS_PER_PAGE), byteorder='big')
 
     def get_tail_columns(self, indirection, page_index):
         columns = []
@@ -84,6 +84,4 @@ class Table:
                 self.page_directory['Tail'][i][page_index].append(Page())
             self.page_directory['Tail'][i][page_index][-1].write(value)
 
-a = Table('test',5,5)
- 
-a
+# a = Table('test',5,5)
