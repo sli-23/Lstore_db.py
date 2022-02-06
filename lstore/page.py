@@ -24,7 +24,7 @@ class Page:
             return True
 
     def write(self, value):                 # sets the an empty array index to value
-        if has_capacity():
+        if self.has_capacity():
             byte_value = value.to_bytes(8, byteorder='big')   # Convert int data to byte data.
             self.data[self.num_records * 8: (self.num_records + 1) * 8] = byte_value  # Write into page.data.
             self.num_records += 1
