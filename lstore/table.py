@@ -56,16 +56,16 @@ class Table:
 
 
     def base_write(self, data):
-        self.num_records += 1
+        self.num_records += 1 #add number of records
         for i, value in enumerate(data):
             multiPages = self.page_directory["base"][i][-1] 
             page = multiPages.get_current()
-            if not multiPages.last_page():
-                if not page.has_capacity():
+            if not multiPages.last_page(): # check if it is the last page in the multipage
+                if not page.has_capacity(): # check if the current page is full
                     self.page_directory['base'][i][-1].add_page_index()
                     page = multiPages.get_current()
             else:
-                if not page.has_capacity():
+                if not page.has_capacity(): 
                     self.page_directory['base'][i].append(MultiPage())
                     self.page_directory['tail'][i].append([Page()])
                     page = self.page_directory['base'][i][-1].get_current()
