@@ -32,15 +32,7 @@ class Table:
         Give a default page/multipage obj to page_directory
         :return:
         """
-        
-        """
-        Page indirection: # Record - (Page Range)(Base Range)(Bytes)
-        example: R3 - (PR)(BP)(16)
 
-        Data modelling:
-       | RID | COL0 | COL1 | TIMESTAMP_COLUMN | SCHEMA_ENCODING_COLUMN | INDIRECTION |
-
-        """
         self.page_directory = {'base':[],'tail':[]}
         for i in range(self.num_columns + DEFAULT_COLUMN):
             self.page_directory['base']=[[MultiPage()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
@@ -64,8 +56,9 @@ class Table:
 
 
     def base_write(self, data):
+        self.num_records += 1
         for i, value in enumerate(data):
-            multiPages = self.page_directory["base"][i][-1]
+            multiPages = self.page_directory["base"][i][-1] 
             page = multiPages.get_current()
             if not multiPages.last_page():
                 if not page.has_capacity():
@@ -77,11 +70,10 @@ class Table:
                     self.page_directory['tail'][i].append([Page()])
                     page = self.page_directory['base'][i][-1].get_current()
             page.write(value)
-
+    
     def tail_write(self, data, page_index):
         for i, value in enumerate(data):
             if not self.page_directory['Tail'][i][page_index][-1].has_capacity():
                 self.page_directory['Tail'][i][page_index].append(Page())
             self.page_directory['Tail'][i][page_index][-1].write(value)
 
-# a = Table('test',5,5)

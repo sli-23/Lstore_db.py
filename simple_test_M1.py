@@ -1,3 +1,4 @@
+from lstore import table
 from lstore.db import Database
 from lstore.query import Query
 from lstore.page import Page, MultiPage
@@ -34,3 +35,11 @@ records
 
 # insert 1 record
 records_test = [92106433, 1, 14, 1, 19]
+
+# base_write simple test for inserting a record
+test = Database()
+table_test = test.create_table('Test', 5, 0)
+
+table_test.base_write(records_test) #????
+
+print(table_test.num_records) # base_write 了之后不增加records数量
