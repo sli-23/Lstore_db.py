@@ -58,14 +58,17 @@ Lineage-based Data Store (**L-Store**) is a solution that combines the real-time
 """
 Data Model in Milestone 1:
 
-bd.py
+Page Directory {}
+|_______________Base Pages[], Tail Pages[]
+
+
+Table
 |
-pages.py
-|
-table.py
-|________Record
-|________Page Range, Base Pages & Tail Pages
-Query.py
+Page()
+|______Multipages (16 * [Page()])
+
+
+# Update Later after finishing Query.py
 """
 ```
 
