@@ -38,18 +38,16 @@ class Query:
     """
 
     def insert(self, *columns):
-        indirection = self.table.num_records #num 0f records
-        rid = 0
+        indirection = self.table.num_records #num of records
+        rid = 0 #need updates
         curr_time = int(time())
         schema_encoding = int('0' * self.table.num_columns)
         column = list(columns)
-        print(column)
         default_column = [indirection, rid, curr_time, schema_encoding]
         default_column.extend(column)
         data = default_column
         
         self.table.base_write(data)
-        print(indirection)
 
     """
     # Read a record with specified key
@@ -67,6 +65,9 @@ class Query:
         # self.table = people in example, index_column = lastname in example, index_value = Wallasch, 
         # query_columns = firstname, lastname in example
     
+    def select(self, key, column, query_columns):
+        pass
+
     """
     # Update a record with specified key and columns
     # Returns True if update is succesful
