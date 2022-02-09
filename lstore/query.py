@@ -25,6 +25,7 @@ class Query:
         try:
             columns.delete(rid)
             self.num_records -= 1
+            return True
         except:
             return False
     
@@ -39,9 +40,10 @@ class Query:
         try:
             self.table.base_write(columnsList)
             self.num_records += 1
+            return True
         except:
             print('An error has occurred.')
-            return false
+            return False
         #schema_encoding = '0' * self.table.num_columns
 
     """
