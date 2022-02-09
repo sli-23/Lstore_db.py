@@ -1,7 +1,5 @@
-from lstore import table
 from lstore.db import Database
 from lstore.query import Query
-from lstore.page import Page, MultiPage
 
 from random import choice, randint, sample, seed
 
@@ -14,14 +12,16 @@ db = Database()
 #       Here the first column would be student id and primary key
 grades_table = db.create_table('Grades', 5, 0)
 
+# create a query class for the grades table
+query = Query(grades_table)
 
-# simple query(inserted)
+# dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 10
+number_of_records = 1000
 number_of_aggregates = 100
 seed(3562901)
-
+count = []
 for i in range(0, number_of_records):
     key = 92106429 + randint(0, number_of_records)
 
@@ -30,22 +30,11 @@ for i in range(0, number_of_records):
         key = 92106429 + randint(0, number_of_records)
 
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
+    count.append(records[key])
+    query.insert(*records[key])
+    # print('inserted', records[key])
 
-records
+print("Insert finished")
 
-# insert 1 record
-records_test = [92106433, 1, 14, 1, 19]
-
-# base_write simple test for inserting a record
-test = Database()
-table_test = test.create_table('Test', 5, 0)
-
-query = Query(table_test)
-
-# dictionary for records to test the database: test directory
-records = [92106433, 1, 14, 1, 19]
-
-query.insert(records)
-
-# check records...
-table_test.num_records
+print(grades_table.num_records)
+print(grades_table.get_base_page_range())

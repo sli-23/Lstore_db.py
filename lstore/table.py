@@ -31,6 +31,9 @@ class Table:
         """
         Give a default page/multipage obj to page_directory
         :return:
+
+        page directory should map RID to page range, page....
+
         """
 
         self.page_directory = {'base':[],'tail':[]}
@@ -64,7 +67,7 @@ class Table:
     """
 
     def base_write(self, data):
-        self.num_records += 1 #add number of records
+        self.num_records += 1 #add number of records in table level
         for i, value in enumerate(data):
             multiPages = self.page_directory["base"][i][-1] 
             page = multiPages.get_current()
@@ -73,7 +76,6 @@ class Table:
                     self.page_directory['base'][i][-1].add_page_index()
                     page = multiPages.get_current()
             else:
-                # Next Updates.....
                 if not page.has_capacity(): 
                     self.page_directory['base'][i].append(MultiPage())
                     self.page_directory['tail'][i].append([Page()])
@@ -87,3 +89,6 @@ class Table:
                 self.page_directory['Tail'][i][page_index].append(Page())
             self.page_directory['Tail'][i][page_index][-1].write(value)
 
+    def get_base_page_range(self):
+        return len(self.page_directory['base'][0])
+    

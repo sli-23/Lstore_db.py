@@ -17,19 +17,13 @@ class Page:
         self.data = bytearray(4096)
 
     def has_capacity(self):                 
-        capacity = RECORDS_PER_PAGE - self.num_records
-        if capacity == 0:
-            return False
-        else:
-            return True
+        return self.num_records < RECORDS_PER_PAGE    # When num_record == 512,the page is full.
 
-    def write(self, value):                 # sets the an empty array index to value
-        if self.has_capacity():
-            byte_value = value.to_bytes(8, byteorder='big')   # Convert int data to byte data.
-            self.data[self.num_records * 8: (self.num_records + 1) * 8] = byte_value  # Write into page.data.
-            self.num_records += 1
-        else:
-            raise IndexError('No capacity')
+    def write(self, value): # sets the an empty array index to value
+        byte_value = value.to_bytes(8, byteorder='big')   # Convert int data to byte data.
+        self.data[self.num_records * 8: (self.num_records + 1) * 8] = byte_value  # Write into page.data.
+        self.num_records += 1
+
 
     def get(self,index):
         """

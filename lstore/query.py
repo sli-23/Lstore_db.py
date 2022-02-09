@@ -1,5 +1,7 @@
+from email.mime import base
 from lstore.table import Table, Record
 from lstore.index import Index
+from time import time
 
 
 class Query:
@@ -31,20 +33,22 @@ class Query:
     
     """
     # Insert a record with specified columns
-    # Return True upon succesful insertion
+    # Return True upon successful insertion
     # Returns False if insert fails for whatever reason
     """
 
     def insert(self, *columns):
-        columnsList = list(columns)
-        try:
-            self.table.base_write(columnsList)
-            self.num_records += 1
-            return True
-        except:
-            print('An error has occurred.')
-            return False
-        #schema_encoding = '0' * self.table.num_columns
+        indirection = 0
+        rid = 0
+        curr_time = int(time())
+        schema_encoding = int('0' * self.table.num_columns)
+        column = list(columns)
+        
+        default_column = [indirection, rid, curr_time, schema_encoding]
+        default_column.extend(column)
+        data = default_column
+        
+        self.table.base_write(data)
 
     """
     # Read a record with specified key
@@ -56,12 +60,15 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
 
-    def select(self, index_value, index_column, query_columns):
+    def select(self):
         pass
-        self.table
+
+    def select_index(self, index_value, index_column, query_columns):
+        pass
         # select firstname, lastname, from people where lastname = Wallasch
         # self.table = people in example, index_column = lastname in example, index_value = Wallasch, 
         # query_columns = firstname, lastname in example
+    
     """
     # Update a record with specified key and columns
     # Returns True if update is succesful
@@ -82,8 +89,8 @@ class Query:
 
     def sum(self, start_range, end_range, aggregate_column_index):
         try:
-            for i in range(start_range , end_range)
-            sum1 = len(start_range, end_range)
+            for i in range(start_range , end_range):
+                sum1 = len(start_range, end_range)
         except:
             return False
 
