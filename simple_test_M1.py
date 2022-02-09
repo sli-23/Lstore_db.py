@@ -40,6 +40,12 @@ records_test = [92106433, 1, 14, 1, 19]
 test = Database()
 table_test = test.create_table('Test', 5, 0)
 
-table_test.base_write(records_test) #????
+query = Query(table_test)
 
-print(table_test.num_records) # base_write 了之后不增加records数量
+# dictionary for records to test the database: test directory
+records = [92106433, 1, 14, 1, 19]
+
+query.insert(records)
+
+# check records...
+table_test.num_records

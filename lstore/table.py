@@ -53,7 +53,15 @@ class Table:
         for i in range(0, self.num_columns):
             columns.append(int.from_bytes(self.page_directory["tail"][i+DEFAULT_COLUMN][page_index][indirection_int//RECORDS_PER_PAGE].get(indirection_int%RECORDS_PER_PAGE), byteorder='big'))
         return columns
+    
+    """
+    Check process:
+     - if the index of the page in multipage is not the last page
+     - if the page is full
 
+    Next update:
+     - If a multipage is full
+    """
 
     def base_write(self, data):
         self.num_records += 1 #add number of records
@@ -65,12 +73,14 @@ class Table:
                     self.page_directory['base'][i][-1].add_page_index()
                     page = multiPages.get_current()
             else:
+                # Next Updates.....
                 if not page.has_capacity(): 
                     self.page_directory['base'][i].append(MultiPage())
                     self.page_directory['tail'][i].append([Page()])
                     page = self.page_directory['base'][i][-1].get_current()
             page.write(value)
-    
+
+    # It may not be needed
     def tail_write(self, data, page_index):
         for i, value in enumerate(data):
             if not self.page_directory['Tail'][i][page_index][-1].has_capacity():

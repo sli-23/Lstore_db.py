@@ -40,7 +40,6 @@ Lineage-based Data Store (**L-Store**) is a solution that combines the real-time
 
 ### Date Model
 * Data storage in L-Store is columnar. The key idea is to separate the original version of a record inserted into the database (**base record**) and the subsequent updates to it (**tail records**)
-* 
 
 ---
 ### Bufferpool Management
