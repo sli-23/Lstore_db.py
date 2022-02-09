@@ -56,15 +56,7 @@ class Table:
         for i in range(0, self.num_columns):
             columns.append(int.from_bytes(self.page_directory["tail"][i+DEFAULT_COLUMN][page_index][indirection_int//RECORDS_PER_PAGE].get(indirection_int%RECORDS_PER_PAGE), byteorder='big'))
         return columns
-    
-    """
-    Check process:
-     - if the index of the page in multipage is not the last page
-     - if the page is full
 
-    Next update:
-     - If a multipage is full
-    """
 
     def base_write(self, data):
         self.num_records += 1 #add number of records in table level

@@ -38,17 +38,18 @@ class Query:
     """
 
     def insert(self, *columns):
-        indirection = 0
+        indirection = self.table.num_records #num 0f records
         rid = 0
         curr_time = int(time())
         schema_encoding = int('0' * self.table.num_columns)
         column = list(columns)
-        
+        print(column)
         default_column = [indirection, rid, curr_time, schema_encoding]
         default_column.extend(column)
         data = default_column
         
         self.table.base_write(data)
+        print(indirection)
 
     """
     # Read a record with specified key
@@ -59,9 +60,6 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
-
-    def select(self):
-        pass
 
     def select_index(self, index_value, index_column, query_columns):
         pass

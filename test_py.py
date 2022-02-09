@@ -27,12 +27,8 @@ for i in range(0, number_of_records):
     query.insert(*records[key])
     # print('inserted', records[key])
 
+for i in count:
+    print(i)
 
-print(count)
-
-test = grades_table.page_directory['base'][-1][-1] #第几个column里面的multipage
-test = test.pages[0]#multipage里面的第几个page
-print(test)
-b = test.get(0) #page里面的第几个
-print(bytes(b))
-print(int.from_bytes(b'\x00\x00\x00\x00\x00\x00\x00\x13', byteorder='big'))
+print(index.indices)
+print(index.locate(0, 92106431))
