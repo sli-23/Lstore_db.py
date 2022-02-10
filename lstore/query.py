@@ -15,6 +15,7 @@ class Query:
 
     def __init__(self, table):
         self.table = table
+        self.index = Index(table)
         pass
 
     """
@@ -47,6 +48,7 @@ class Query:
         default_column = [indirection, rid, curr_time, schema_encoding]
         default_column.extend(column)
         data = default_column
+        # index
         
         self.table.base_write(data)
 
@@ -60,15 +62,16 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
 
+    # may update in the future its pretty slow...
     def select(self, index_value, index_column, query_columns):
         record = []
         
-        # Check if the length of query_column is equal to num_columns
+        # Check if the length of query_column is unequal to num_columns
         if len(query_columns) != self.table.num_columns:
             return record
         
         byte_value = index_value.to_bytes(8, byteorder='big')
-        multipage = self.table.page_directory['base'][4 + index_column] 
+        multipage = self.table.page_directory['base'][DEFAULT_COLUMN + index_column] 
 
         page_range = 0
         page_index = 0
@@ -76,7 +79,7 @@ class Query:
         
         for i in range(len(multipage)): # page_range
             for j in range(len(multipage[i].pages)): #in which pages in a single multipage
-                for z in range(multipage[i].pages[j].num_records): # numbers of records in single pages:
+                for z in range(multipage[i].pages[j].num_records): # numbers of records in single pages
                     if multipage[i].pages[j].get(z) == byte_value:
                         page_range = i
                         page_index = j
@@ -86,7 +89,7 @@ class Query:
             if data == 0:
                 record.append(None)
             else:
-                val = self.table.page_directory['base'][4 + col][page_range].pages[page_index].get(record_index)
+                val = self.table.page_directory['base'][DEFAULT_COLUMN + col][page_range].pages[page_index].get(record_index)
                 record.append(int.from_bytes(bytes(val), byteorder='big'))
         
         return record
@@ -99,7 +102,7 @@ class Query:
 
     def update(self, primary_key, *columns):
         table_key = self.table.key
-        multipage = self.table.page_directory['base'][3 + table_key]
+        multipage = self.table.page_directory['base'][DEFAULT_COLUMN + table_key]
         indirection = self.table.page_directory['base'][INDIRECTION_COLUMN]
 
 
