@@ -48,9 +48,9 @@ class Query:
         default_column = [indirection, rid, curr_time, schema_encoding]
         default_column.extend(column)
         data = default_column
-        # index
-        
         self.table.base_write(data)
+
+        # index
 
     """
     # Read a record with specified key

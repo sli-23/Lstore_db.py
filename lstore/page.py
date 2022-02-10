@@ -49,7 +49,8 @@ class Page:
 class MultiPage():
     def __init__(self):
         self.index = 0   # Default page index = 0
-        self.pages = [Page()] * MAXPAGE
+        self.pages = [Page() for _ in range(MAXPAGE)]
+        self.count = 0
 
     def get_current(self):
         return self.pages[self.index]
@@ -63,3 +64,4 @@ class MultiPage():
     def get_page(self, key):
         if 0 <= key <= self.index:
             return self.pages[key]
+     

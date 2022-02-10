@@ -9,9 +9,10 @@ grades_table = db.create_table('Grades', 5, 0)
 query = Query(grades_table)
 index = Index(grades_table)
 
+print(grades_table)
 records = {}
 
-number_of_records = 5
+number_of_records = 512
 number_of_aggregates = 100
 seed(3562901)
 count = []
@@ -27,6 +28,7 @@ for i in range(0, number_of_records):
     query.insert(*records[key])
     # print('inserted', records[key])
 
+"""
 # Check inserted records using select query
 for key in records:
     # select function will return array of records 
@@ -41,5 +43,7 @@ for key in records:
     else:
         pass
         # print('select on', key, ':', record)
+"""
 
 
+print(grades_table.get_record_info(998))

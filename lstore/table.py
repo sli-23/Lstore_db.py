@@ -59,20 +59,21 @@ class Table:
 
 
     def base_write(self, data):
-        self.num_records += 1 #add number of records in table level
+        self.num_records += 1
         for i, value in enumerate(data):
-            multiPages = self.page_directory["base"][i][-1] 
+            multiPages = self.page_directory["base"][i][-1]
             page = multiPages.get_current()
-            if not multiPages.last_page(): # check if it is the last page in the multipage
-                if not page.has_capacity(): # check if the current page is full
+            if not multiPages.last_page():
+                if not page.has_capacity():
                     self.page_directory['base'][i][-1].add_page_index()
                     page = multiPages.get_current()
             else:
-                if not page.has_capacity(): 
+                if not page.has_capacity():
                     self.page_directory['base'][i].append(MultiPage())
                     self.page_directory['tail'][i].append([Page()])
                     page = self.page_directory['base'][i][-1].get_current()
             page.write(value)
+
 
     # It may not be needed
     def tail_write(self, data, page_index):
@@ -84,3 +85,18 @@ class Table:
     def get_base_page_range(self):
         return len(self.page_directory['base'][0])
     
+    def get_record_info(self, rid): #using rid to find record's page_range and index in this page_range's page
+        # record: page_range, page_index
+        rid_multipage = self.page_directory['base'][RID_COLUMN] #get rid column
+        multipage_range = round(rid // (RECORDS_PER_PAGE * MAXPAGE)) # in which multipage
+        page_range = round(rid // RECORDS_PER_PAGE) # in which page_range in that multipage
+        rid_page = rid_multipage[multipage_range].pages[page_range]
+        
+        record_page_range = page_range
+        record_page_index = 0
+
+        for i in range(rid_page.num_records):
+            if rid_page.get(i) == rid:
+                record_page_index == i
+        
+        return record_page_range, record_page_index
