@@ -38,9 +38,9 @@ print("Insert finished")
 for key in records:
     # select function will return array of records 
     # here we are sure that there is only one record in t hat array
-    record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
+    record = query.select(key, 0, [1, 1, 1, 1, 1])
     error = False
-    for i, column in enumerate(record.columns):
+    for i, column in enumerate(record):
         if column != records[key][i]:
             error = True
     if error:

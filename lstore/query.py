@@ -1,6 +1,7 @@
 from email.mime import base
 from lstore.table import Table, Record
 from lstore.index import Index
+from lstore.config import *
 from time import time
 
 
@@ -38,8 +39,8 @@ class Query:
     """
 
     def insert(self, *columns):
-        indirection = self.table.num_records #num of records
-        rid = 0 #need updates
+        indirection = 0 #num of records
+        rid = self.table.num_records #need updates
         curr_time = int(time())
         schema_encoding = int('0' * self.table.num_columns)
         column = list(columns)
@@ -59,23 +60,48 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
 
-    def select_index(self, index_value, index_column, query_columns):
-        pass
-        # select firstname, lastname, from people where lastname = Wallasch
-        # self.table = people in example, index_column = lastname in example, index_value = Wallasch, 
-        # query_columns = firstname, lastname in example
-    
-    def select(self, key, column, query_columns):
-        pass
+    def select(self, index_value, index_column, query_columns):
+        record = []
+        
+        # Check if the length of query_column is equal to num_columns
+        if len(query_columns) != self.table.num_columns:
+            return record
+        
+        byte_value = index_value.to_bytes(8, byteorder='big')
+        multipage = self.table.page_directory['base'][4 + index_column] 
+
+        page_range = 0
+        page_index = 0
+        record_index = 0
+        
+        for i in range(len(multipage)): # page_range
+            for j in range(len(multipage[i].pages)): #in which pages in a single multipage
+                for z in range(multipage[i].pages[j].num_records): # numbers of records in single pages:
+                    if multipage[i].pages[j].get(z) == byte_value:
+                        page_range = i
+                        page_index = j
+                        record_index = z
+
+        for col, data in enumerate(query_columns):
+            if data == 0:
+                record.append(None)
+            else:
+                val = self.table.page_directory['base'][4 + col][page_range].pages[page_index].get(record_index)
+                record.append(int.from_bytes(bytes(val), byteorder='big'))
+        
+        return record
 
     """
     # Update a record with specified key and columns
-    # Returns True if update is succesful
+    # Returns True if update is successful
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
 
     def update(self, primary_key, *columns):
-        pass
+        table_key = self.table.key
+        multipage = self.table.page_directory['base'][3 + table_key]
+        indirection = self.table.page_directory['base'][INDIRECTION_COLUMN]
+
 
     """
     :param start_range: int         # Start of the key range to aggregate 

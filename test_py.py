@@ -27,8 +27,19 @@ for i in range(0, number_of_records):
     query.insert(*records[key])
     # print('inserted', records[key])
 
-for i in count:
-    print(i)
+# Check inserted records using select query
+for key in records:
+    # select function will return array of records 
+    # here we are sure that there is only one record in t hat array
+    record = query.select(key, 0, [1, 1, 1, 1, 1])
+    error = False
+    for i, column in enumerate(record):
+        if column != records[key][i]:
+            error = True
+    if error:
+        print('select error on', key, ':', record, ', correct:', records[key])
+    else:
+        pass
+        # print('select on', key, ':', record)
 
-print(index.indices)
-print(index.locate(0, 92106431))
+
