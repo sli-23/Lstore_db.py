@@ -60,9 +60,9 @@ for key in records:
         # update our test directory
         records[key][i] = value
         query.update(key, *updated_columns)
-        record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
+        record = query.select(key, 0, [1, 1, 1, 1, 1])
         error = False
-        for j, column in enumerate(record.columns):
+        for j, column in enumerate(record):
             if column != records[key][j]:
                 error = True
         if error:
@@ -84,4 +84,3 @@ for c in range(0, grades_table.num_columns):
             print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
         else:
             pass
-            # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
