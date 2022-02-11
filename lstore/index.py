@@ -38,11 +38,9 @@ class Index:
     """
 
     def create_index(self, column_number):
-        tree = self.indices[column_number]
-        for i in range(self.table.num_records):
-            a = i // (MAXPAGE * RECORDS_PER_PAGE)
-            b = i % (MAXPAGE * RECORDS_PER_PAGE)
-        pass    # initially
+        if self.table.num_columns <= column_number:
+            return
+        
 
 
     """
@@ -56,3 +54,6 @@ class Index:
     def set_index(self, column_number, key, index):
         # update value "index" to the key of No.column_number.
         self.indices[column_number].update({key: index})
+
+    def update_index(self, rid, column_number, new_key):
+        pass

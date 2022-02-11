@@ -32,17 +32,30 @@ class Query:
     """
 
     def delete(self, primary_key):
-        record_multipage, record_page_range, record_index = self.table.get_base(primary_key)
-        self.table.delete_rid_base(record_multipage, record_page_range, record_index)
+        record_multipage, record_page_range, record_index = self.table.get_base(primary_key) #base page
+        self.table.delete_rid_base(record_multipage, record_page_range, record_index) #delete base page's rid
 
-        indirection_base = self.table.page_directory['base'][INDIRECTION_COLUMN]
-        indirection_tail = self.table.page_directory['tail'][INDIRECTION_COLUMN]
-        indirection = indirection_base[record_multipage].pages[record_page_range].get(record_index) #bytes
+        indirection_base_bytes = self.table.key_indirection(primary_key)
+        indirection_base_ints = int.from_bytes(bytes(indirection_base_bytes), byteorder='big')
 
-        if indirection != MAXINT.to_bytes(8, byteorder='big'):
-            indirection_str = indirection.decode()
-            tail_page_range, tail_record_index = self.table.get_tail_key(primary_key)
-            self.table.delete_rid_tail(tail_page_range, tail_record_index)
+        #indirection of the primary key
+        if indirection_base_ints == MAXINT: #NO UPDATE
+            val = (0).to_bytes(8, byteorder='big')
+            for i in range(DEFAULT_COLUMN, DEFAULT_COLUMN + self.table.num_columns):
+                value = self.table.page_directory['base'][i][record_multipage].pages[record_page_range].get(record_index)
+                value = val
+        else:
+            tail_page_range, tail_index = self.table.get_tail_rid(indirection_base_ints)
+            self.table.delete_rid_tail(tail_page_range, tail_index)
+            val = (0).to_bytes(8, byteorder='big')
+            for i in range(DEFAULT_COLUMN, DEFAULT_COLUMN + self.table.num_columns):
+                value = self.table.page_directory['tail'][i][tail_page_range].get(tail_index)
+                value = val       
+
+            self.table.num_updates -= 1    
+        self.table.num_records -= 1
+
+
     
     """
     # Insert a record with specified columns
