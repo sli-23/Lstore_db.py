@@ -1,5 +1,6 @@
 from lstore.db import Database
 from lstore.query import Query
+from xmlrpc.client import MAXINT
 
 from random import choice, randint, sample, seed
 
@@ -85,3 +86,6 @@ for c in range(0, grades_table.num_columns):
         else:
             pass
             # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
+
+
+print(MAXINT)
