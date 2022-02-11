@@ -36,8 +36,8 @@ class Index:
     # optional: Create index on specific column
     """
 
-    def create_index(self, column_number):
-        
+    def create_index(self, column_number, key, rid):
+              
         pass    # initially
 
 

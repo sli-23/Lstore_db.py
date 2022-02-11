@@ -1,5 +1,6 @@
 from lstore.db import Database
 from lstore.query import Query
+from lstore.config import *
 
 from random import choice, randint, sample, seed
 
@@ -59,7 +60,7 @@ if visual_request == 'y':
         raise ValueError
     
     multipage_test = round(index_number / 8192)
-    test = grades_table.page_directory['base'][3 + col_number][multipage_test]
+    test = grades_table.page_directory['base'][col_number][multipage_test]
     test_page_range = round(index_number / 512)
     index_number = index_number - multipage_test * 512
     test_page = test.pages[test_page_range]
@@ -88,29 +89,19 @@ print(record_default_columns)
 ('-----------------')
 print('Testing select function.....')
 
-count_error = 0
-for key in records:
-    record = query.select(key, 0, [1, 1, 1, 1, 1])
-    error = False
-    for i, column in enumerate(record):
-        if column != records[key][i]:
-            error = True
-            count_error += 1
-    if error:
-        print('select error on', key, ':', record, ', correct:', records[key])
-    else:
-        pass
-        # print('select on', key, ':', record)
-
-if count_error != 0:
-    raise ValueError('error occurs')
-else:
-    print(' - Testing completed')
 
 # ----------------Update--------------- #
 print('-----------------')
 print('Testing update function.....')
 
+for i in count:
+    print(i)
+
+print(query.select(92106433, 0, [1,1,1,1,1])[0].columns)
+updated_columns = [None, None, 0, None, None]
+query.update(count[0][0], *updated_columns)
+
+a = grades_table.page_directory['tail'][1][-1].get(0)
 
 # ----------------Sum--------------- #
 print('-----------------')

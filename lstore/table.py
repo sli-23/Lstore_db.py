@@ -23,8 +23,11 @@ class Table:
         self.key = key
         self.num_columns = num_columns
         self.num_records = 0
+        self.num_updates = 0
+        self.updates = []
         self.page_directory = {}
         self.index = Index(self)
+        self.key_lst = []
         self.__init_page_directory()
 
     def __init_page_directory(self):
@@ -39,14 +42,14 @@ class Table:
         self.page_directory = {'base':[],'tail':[]}
         for i in range(self.num_columns + DEFAULT_COLUMN):
             self.page_directory['base']=[[MultiPage()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
-            self.page_directory['tail'] = [[[Page()]] for _ in range(self.num_columns + DEFAULT_COLUMN)]
+            self.page_directory['tail'] = [[Page()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
 
     
     def __merge(self):
         print("merge is happening")
         pass
 
-    def get_tail(self, indirection, column, page_index):
+    def get_tail_indirection(self, indirection, column, page_index):
         indirection_int = int(str(indirection.decode()).split('\x00')[-1])    # Covert byte to int
         return int.from_bytes(self.page_directory["Tail"][column + DEFAULT_COLUMN][page_index][indirection_int // DEFAULT_COLUMN].get(indirection_int % RECORDS_PER_PAGE), byteorder='big')
 
@@ -70,17 +73,17 @@ class Table:
             else:
                 if not page.has_capacity():
                     self.page_directory['base'][i].append(MultiPage())
-                    self.page_directory['tail'][i].append([Page()])
+                    #self.page_directory['tail'][i].append([Page()])
                     page = self.page_directory['base'][i][-1].get_current()
             page.write(value)
 
 
-    # It may not be needed
-    def tail_write(self, data, page_index):
+    def tail_write(self, data):
         for i, value in enumerate(data):
-            if not self.page_directory['Tail'][i][page_index][-1].has_capacity():
-                self.page_directory['Tail'][i][page_index].append(Page())
-            self.page_directory['Tail'][i][page_index][-1].write(value)
+            if not self.page_directory['tail'][i][-1].has_capacity():
+                self.page_directory['tail'][i].append(Page())
+            self.page_directory['tail'][i][-1].write(value)
+
 
     def get_base_page_range(self):
         return len(self.page_directory['base'][0])
@@ -103,7 +106,85 @@ class Table:
 
         return record_page_range, record_page_index
 
-    def get_rid(self, record_index, record_page_range):
-        if record_page_range == 0:
-            return record_index * 1
-        return record_index + record_page_range * 512
+    def get_base_rid(self, multipage_range, page_range, record_index): 
+        rid_page = self.page_directory['base'][RID_COLUMN][multipage_range].pages[page_range]
+        rid = rid_page.get(record_index)
+        rid = int.from_bytes(bytes(rid), byteorder='big')
+        return rid
+
+
+    def get_base(self, key):
+        page = self.page_directory['base'][DEFAULT_COLUMN + self.key]
+        record_index = 0
+        record_page_range = 0
+        record_multipage = 0
+        for i in range(len(page)):
+            for j in range(len(page[i].pages)):
+                for z in range(page[i].pages[j].num_records):
+                    if page[i].pages[j].get(z) == key:
+                        record_index = z
+                        record_page_range = j
+                        record_multipage = i
+        return record_multipage, record_page_range, record_index
+
+    def get_base_columns(self, rid):
+        pass
+
+    def get_tail_key(self, key):
+        page = self.page_directory['tail'][DEFAULT_COLUMN + self.key]
+        record_page_range = 0
+        record_index = 0
+        for i in range(len(page)):
+            for j in range(page[i].numbers):
+                if page[i].get(j) == key:
+                    record_page_range = i
+                    record_index = j
+        return record_page_range, record_index
+
+    def get_tail_rid(self, rid):
+        page = self.page_directory['tail'][RID_COLUMN]
+        record_page_range = 0
+        record_index = 0
+        for i in range(len(page)):
+            for j in range(page[i].num_records):
+                if page[i].get(j) == rid:
+                    record_page_range = i
+                    record_index = j
+        return record_page_range, record_index
+
+    def get_tail_columns(self, rid):
+        page = self.page_directory['tail'][RID_COLUMN]
+        record_page_range = 0
+        record_index = 0
+        tail_columns = []
+        for i in range(len(page)):
+            for j in range(page[i].num_records):
+                if page[i].get(j) == rid:
+                   print(i,j)
+        return tail_columns
+
+
+    def key_indirection(self, key):
+        multipage, page_range, index = self.get_base(key)
+        page = self.page_directory['base'][INDIRECTION_COLUMN]
+        return page[multipage].pages[page_range].get(index) #bytes
+
+    def key_rid(self, key):
+        multipage, page_range, index = self.get_base(key)
+        page = self.page_directory['base'][RID_COLUMN]
+        return page[multipage].pages[page_range].get(index) #bytes
+
+
+    def get_schema_encoding_base(self, key):
+        page = self.page_directory['base'][DEFAULT_COLUMN + self.key]
+        record_index = 0
+        record_page_range = 0
+        record_multipage = 0
+        for i in range(len(page)):
+            for j in range(len(page[i].pages)):
+                for z in range(page[i].pages[j].num_records):
+                    if page[i].pages[j].get(z) == key:
+                        record_index = z
+                        record_page_range = j
+                        record_multipage = i
+        return self.page_directory['base'][SCHEMA_ENCODING_COLUMN][record_multipage].pages[record_page_range].get(record_index) #bytes

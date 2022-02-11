@@ -1,8 +1,14 @@
 from email.mime import base
+from enum import EnumMeta
+from re import X
+from sys import byteorder
+from tkinter.tix import MAX
+from xmlrpc.client import MAXINT
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.config import *
 from time import time
+from lstore.page import Page, MultiPage
 
 
 class Query:
@@ -26,13 +32,7 @@ class Query:
     """
 
     def delete(self, primary_key):
-        RID = self.index[self.primary_key].locate(primary_key)
-        try:
-            column.delete(RID)
-            self.num_records -= 1
-            return True
-        except:
-            return False
+        pass
     
     """
     # Insert a record with specified columns
@@ -41,17 +41,22 @@ class Query:
     """
 
     def insert(self, *columns):
-        indirection = 0 #num of records
-        rid = self.table.num_records #need updates
-        curr_time = int(time())
-        schema_encoding = int('0' * self.table.num_columns)
-        column = list(columns)
-        default_column = [indirection, rid, curr_time, schema_encoding]
-        default_column.extend(column)
-        data = default_column
-        self.table.base_write(data)
+        try:
+            indirection = MAXINT
+            rid = self.table.num_records #num of records
+            curr_time = int(time())
+            schema_encoding = '0' * self.table.num_columns
+            schema_encoding = int.from_bytes(schema_encoding.encode(), byteorder='big')
 
-        # index
+            default_column = [indirection, rid, curr_time, schema_encoding]
+            column = list(columns)
+            default_column.extend(column)
+            self.table.base_write(default_column)
+
+            self.table.key_lst.append(columns[self.table.key])
+            return True
+        except:
+            return False
 
     """
     # Read a record with specified key
@@ -64,6 +69,7 @@ class Query:
     """
 
     def select(self, index_value, index_column, query_columns):
+
         records = []
         
         # Check if the length of query_column is unequal to num_columns
@@ -85,6 +91,8 @@ class Query:
                         page_index = j
                         record_index = z
         
+
+
         record = []
 
         for col, data in enumerate(query_columns): 
@@ -93,9 +101,10 @@ class Query:
             else:
                 val = self.table.page_directory['base'][DEFAULT_COLUMN + col][page_range].pages[page_index].get(record_index)
                 record.append(int.from_bytes(bytes(val), byteorder='big'))
-    
-        rid = self.table.get_rid(page_index, page_index)
+        
+        rid = self.table.get_base_rid(page_range, page_index, record_index)
         key = record[self.table.key]
+
         record_class = Record(rid, key, record)
         records.append(record_class)
         return records
@@ -107,9 +116,52 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
-        table_key = self.table.key
-        multipage = self.table.page_directory['base'][DEFAULT_COLUMN + table_key]
-        indirection = self.table.page_directory['base'][INDIRECTION_COLUMN]
+        base_indirection = self.table.key_indirection(primary_key)
+        tail_record_multipage, tail_record_page_range, tail_record_index = self.table.get_base(primary_key)
+        columns = list(columns)
+        for col, val in enumerate(columns):
+            if val == None:
+                continue
+            else:
+                # tail - rid
+                tail_rid = int.from_bytes(('r' + str(self.table.num_updates)).encode(),byteorder = 'big')
+                # first update
+                if int.from_bytes(bytes(base_indirection), byteorder='big') == MAXINT:
+                    tail_indirection = self.table.key_rid(primary_key) #bytes
+                    tail_indirection = int.from_bytes(bytes(tail_indirection), byteorder='big')
+                    
+                    tail_column = []
+                    tail_column = [MAXINT for i in range(0, len(columns))]
+                #already updated
+                else:
+                    tail_indirection = int.from_bytes(base_indirection, byteorder='big')
+                    tail_column = self.table.get_tail_columns(base_indirection)
+                    tail_column[col] = val
+
+                schema_encoding = ["0" for _ in range(self.table.num_columns)]
+                schema_encoding[col] = '1'
+                schema_encoding_new = ''
+                for c in schema_encoding:
+                    schema_encoding_new += c
+                
+                schema_encoding = int.from_bytes(("".join(schema_encoding_new)).encode(), byteorder='big')
+                base_schema_encoding = int.from_bytes(self.table.get_schema_encoding_base(primary_key), byteorder='big')
+                schema_encoding = schema_encoding|base_schema_encoding
+                
+                default_column = [tail_indirection, tail_rid, schema_encoding]
+                default_column.extend(tail_column)
+                
+                #self.table.tail_write(default_column)
+                for col, val in enumerate(default_column):
+                    tail_page = self.table.page_directory['tail'][col][-1]
+                    if not tail_page.has_capacity():
+                        self.table.page_directory['tail'][col].append(Page())
+                        tail_page = self.table.page_directory['tail'][col][-1]
+                    tail_page.write(val)
+
+                self.table.page_directory['base'][INDIRECTION_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, tail_rid)
+                self.table.page_directory['base'][SCHEMA_ENCODING_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, schema_encoding)
+                self.table.num_updates += 1
 
 
     """
@@ -122,11 +174,27 @@ class Query:
     """
 
     def sum(self, start_range, end_range, aggregate_column_index):
-        try:
-            for i in range(start_range , end_range):
-                sum1 = len(start_range, end_range)
-        except:
-            return False
+        key_lst = sorted(self.table.key_lst)
+        start_index = 0
+        end_index = 0
+        count = 0
+
+        for key in key_lst:
+            if key == start_range:
+                start_index = count
+            elif key == end_range:
+                end_index = count
+            count += 1
+        
+        keys = key_lst[start_index:end_index]
+        sum = 0
+
+        for key in keys:
+            col = [0] * self.table.num_columns
+            col[aggregate_column_index] = 1
+            #sum += (self.select2(key, col))[0].columns[aggregate_column_index]
+        
+        return sum
 
     """
     incremenets one column of the record
