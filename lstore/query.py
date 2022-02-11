@@ -63,13 +63,12 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
 
-    # may update in the future its pretty slow...
     def select(self, index_value, index_column, query_columns):
-        record = []
+        records = []
         
         # Check if the length of query_column is unequal to num_columns
         if len(query_columns) != self.table.num_columns:
-            return record
+            return records
         
         byte_value = index_value.to_bytes(8, byteorder='big')
         multipage = self.table.page_directory['base'][DEFAULT_COLUMN + index_column] 
@@ -85,16 +84,22 @@ class Query:
                         page_range = i
                         page_index = j
                         record_index = z
+        
+        record = []
 
-        for col, data in enumerate(query_columns):
+        for col, data in enumerate(query_columns): 
             if data == 0:
                 record.append(None)
             else:
                 val = self.table.page_directory['base'][DEFAULT_COLUMN + col][page_range].pages[page_index].get(record_index)
                 record.append(int.from_bytes(bytes(val), byteorder='big'))
-        
-        return record
-
+    
+        rid = self.table.get_rid(page_index, page_index)
+        key = record[self.table.key]
+        record_class = Record(rid, key, record)
+        records.append(record_class)
+        return records
+   
     """
     # Update a record with specified key and columns
     # Returns True if update is successful
