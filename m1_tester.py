@@ -59,7 +59,7 @@ for key in records:
         original = records[key].copy()
         # update our test directory
         records[key][i] = value
-        #query.update(key, *updated_columns)
+        query.update(key, *updated_columns)
         record = query.select(key, 0, [1, 1, 1, 1, 1])[0]
         error = False
         for j, column in enumerate(record.columns):

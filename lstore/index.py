@@ -11,6 +11,7 @@ class Index:
     def __init__(self, table):
         self.table = table
         self.indices = [OOBTree() for _ in range(table.num_columns)]  # Give a default value for indices.
+         # using key to index
 
     """
     # returns the location of all records with the given value on column "column"
@@ -36,8 +37,11 @@ class Index:
     # optional: Create index on specific column
     """
 
-    def create_index(self, column_number, key, rid):
-              
+    def create_index(self, column_number):
+        tree = self.indices[column_number]
+        for i in range(self.table.num_records):
+            a = i // (MAXPAGE * RECORDS_PER_PAGE)
+            b = i % (MAXPAGE * RECORDS_PER_PAGE)
         pass    # initially
 
 

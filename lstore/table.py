@@ -114,13 +114,14 @@ class Table:
 
 
     def get_base(self, key):
+        key = key.to_bytes(8, byteorder='big')
         page = self.page_directory['base'][DEFAULT_COLUMN + self.key]
         record_index = 0
         record_page_range = 0
         record_multipage = 0
-        for i in range(len(page)):
-            for j in range(len(page[i].pages)):
-                for z in range(page[i].pages[j].num_records):
+        for i in range(len(page)): # how many multipages
+            for j in range(len(page[i].pages)): # page_range in multipage
+                for z in range(page[i].pages[j].num_records): #page's number's records
                     if page[i].pages[j].get(z) == key:
                         record_index = z
                         record_page_range = j
@@ -131,17 +132,31 @@ class Table:
         pass
 
     def get_tail_key(self, key):
+        key = key.to_bytes(8, byteorder='big')
         page = self.page_directory['tail'][DEFAULT_COLUMN + self.key]
         record_page_range = 0
         record_index = 0
         for i in range(len(page)):
-            for j in range(page[i].numbers):
+            for j in range(page[i].num_records):
                 if page[i].get(j) == key:
                     record_page_range = i
                     record_index = j
         return record_page_range, record_index
 
+    def base_ind_tail_rid(self, indirection):
+        indirection = indirection.to_bytes(8, byteorder='big')
+        page = self.page_directory['tail'][RID_COLUMN]
+        record_page_range = 0
+        record_index = 0
+        for i in range(len(page)):
+            for j in range(page[i].num_records):
+                if page[i].get(j) == indirection:
+                    record_page_range = i
+                    record_index = j
+        return record_page_range, record_index
+
     def get_tail_rid(self, rid):
+        rid = rid.to_bytes(8, byteorder='big')
         page = self.page_directory['tail'][RID_COLUMN]
         record_page_range = 0
         record_index = 0
@@ -152,16 +167,15 @@ class Table:
                     record_index = j
         return record_page_range, record_index
 
-    def get_tail_columns(self, rid):
-        page = self.page_directory['tail'][RID_COLUMN]
-        record_page_range = 0
-        record_index = 0
-        tail_columns = []
-        for i in range(len(page)):
-            for j in range(page[i].num_records):
-                if page[i].get(j) == rid:
-                   print(i,j)
-        return tail_columns
+    def get_tail_columns(self, rid): #table.columns
+        record_page_range, record_index = self.get_tail_rid(rid)
+        tail_column = []
+        for i in range(self.num_columns):
+            page = self.page_directory['tail'][DEFAULT_COLUMN + i]
+            val = page[record_page_range].get(record_index)
+            val = int.from_bytes(bytes(val), byteorder='big')
+            tail_column.append(val)
+        return tail_column
 
 
     def key_indirection(self, key):
@@ -188,3 +202,11 @@ class Table:
                         record_page_range = j
                         record_multipage = i
         return self.page_directory['base'][SCHEMA_ENCODING_COLUMN][record_multipage].pages[record_page_range].get(record_index) #bytes
+
+    def delete_rid_base(self, multipage, page_range, record_index):
+        page = self.page_directory['base'][RID_COLUMN]
+        page[multipage].pages[page_range].data[record_index * 8 : (record_index + 1) * 8] = (0).to_bytes(8, byteorder='big')
+
+    def delete_rid_tail(self, page_range, record_index):
+        page = self.page_directory['tail'][RID_COLUMN]
+        page[page_range].data[record_index * 8 : (record_index + 1) * 8] = (0).to_bytes(8, byteorder='big')

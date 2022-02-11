@@ -32,7 +32,17 @@ class Query:
     """
 
     def delete(self, primary_key):
-        pass
+        record_multipage, record_page_range, record_index = self.table.get_base(primary_key)
+        self.table.delete_rid_base(record_multipage, record_page_range, record_index)
+
+        indirection_base = self.table.page_directory['base'][INDIRECTION_COLUMN]
+        indirection_tail = self.table.page_directory['tail'][INDIRECTION_COLUMN]
+        indirection = indirection_base[record_multipage].pages[record_page_range].get(record_index) #bytes
+
+        if indirection != MAXINT.to_bytes(8, byteorder='big'):
+            indirection_str = indirection.decode()
+            tail_page_range, tail_record_index = self.table.get_tail_key(primary_key)
+            self.table.delete_rid_tail(tail_page_range, tail_record_index)
     
     """
     # Insert a record with specified columns
@@ -69,44 +79,64 @@ class Query:
     """
 
     def select(self, index_value, index_column, query_columns):
+        records = [] # if there are multiple records
+        record = []
 
-        records = []
-        
         # Check if the length of query_column is unequal to num_columns
         if len(query_columns) != self.table.num_columns:
             return records
-        
-        byte_value = index_value.to_bytes(8, byteorder='big')
-        multipage = self.table.page_directory['base'][DEFAULT_COLUMN + index_column] 
 
+        index_value_bytes = index_value.to_bytes(8, byteorder='big')
+        index_multipage = self.table.page_directory['base'][DEFAULT_COLUMN + index_column]
+
+        multipage = 0
         page_range = 0
-        page_index = 0
         record_index = 0
-        
-        for i in range(len(multipage)): # page_range
-            for j in range(len(multipage[i].pages)): #in which pages in a single multipage
-                for z in range(multipage[i].pages[j].num_records): # numbers of records in single pages
-                    if multipage[i].pages[j].get(z) == byte_value:
-                        page_range = i
-                        page_index = j
+
+        for i in range(len(index_multipage)):
+            for j in range(len(index_multipage[i].pages)):
+                for z in range(index_multipage[i].pages[j].num_records):
+                    if index_multipage[i].pages[j].get(z) == index_value_bytes:
+                        multipage = i
+                        page_range = j
                         record_index = z
-        
+
+        # then we can get key / indirection
+
+        key = self.table.page_directory['base'][DEFAULT_COLUMN + self.table.key][multipage].pages[page_range].get(record_index) #bytes
+        indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage].pages[page_range].get(record_index) #bytes
+        indirection_int = int.from_bytes(bytes(indirection), byteorder='big')
 
 
-        record = []
+        if indirection_int != MAXINT:
+            tail_page_range, tail_record_index = self.table.base_ind_tail_rid(indirection_int)
+            maxint_bytes = MAXINT.to_bytes(8, byteorder='big') 
+            for i in range(DEFAULT_COLUMN, DEFAULT_COLUMN + self.table.num_columns):
+                if self.table.page_directory['tail'][i][tail_page_range].get(tail_record_index) != maxint_bytes:
+                    val = self.table.page_directory['tail'][i][tail_page_range].get(tail_record_index)
+                    record.append(val)
+                else:
+                    val = self.table.page_directory['base'][i][multipage].pages[page_range].get(record_index)
+                    record.append(val)
 
-        for col, data in enumerate(query_columns): 
+        else:
+            for i in range(DEFAULT_COLUMN, DEFAULT_COLUMN + self.table.num_columns):
+                val = self.table.page_directory['base'][i][multipage].pages[page_range].get(record_index)
+                record.append(val)
+
+        for col, data in enumerate(query_columns):
             if data == 0:
-                record.append(None)
+                record[col] = None
             else:
-                val = self.table.page_directory['base'][DEFAULT_COLUMN + col][page_range].pages[page_index].get(record_index)
-                record.append(int.from_bytes(bytes(val), byteorder='big'))
+                # convert to int
+                record[col] = int.from_bytes(bytes(record[col]), byteorder='big')
         
-        rid = self.table.get_base_rid(page_range, page_index, record_index)
-        key = record[self.table.key]
+        key_int = record[self.table.key]
+        rid = self.table.get_base_rid(multipage, page_range, record_index)
 
-        record_class = Record(rid, key, record)
+        record_class = Record(rid, key_int, record)
         records.append(record_class)
+        
         return records
    
     """
@@ -116,6 +146,7 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
+        self.table.num_updates += 1
         base_indirection = self.table.key_indirection(primary_key)
         tail_record_multipage, tail_record_page_range, tail_record_index = self.table.get_base(primary_key)
         columns = list(columns)
@@ -129,14 +160,17 @@ class Query:
                 if int.from_bytes(bytes(base_indirection), byteorder='big') == MAXINT:
                     tail_indirection = self.table.key_rid(primary_key) #bytes
                     tail_indirection = int.from_bytes(bytes(tail_indirection), byteorder='big')
-                    
                     tail_column = []
                     tail_column = [MAXINT for i in range(0, len(columns))]
-                #already updated
+                    tail_column[col] = val
+                
+                #if the record has already updated
                 else:
                     tail_indirection = int.from_bytes(base_indirection, byteorder='big')
-                    tail_column = self.table.get_tail_columns(base_indirection)
+                    base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
+                    tail_column = self.table.get_tail_columns(base_indirection_int) #if the record has been updated the indrection will not be MAXINT
                     tail_column[col] = val
+
 
                 schema_encoding = ["0" for _ in range(self.table.num_columns)]
                 schema_encoding[col] = '1'
@@ -146,9 +180,11 @@ class Query:
                 
                 schema_encoding = int.from_bytes(("".join(schema_encoding_new)).encode(), byteorder='big')
                 base_schema_encoding = int.from_bytes(self.table.get_schema_encoding_base(primary_key), byteorder='big')
-                schema_encoding = schema_encoding|base_schema_encoding
                 
-                default_column = [tail_indirection, tail_rid, schema_encoding]
+                tail_schema_encoding = schema_encoding|base_schema_encoding
+                curr_time = int(time())
+                
+                default_column = [tail_schema_encoding, tail_rid, curr_time, schema_encoding]
                 default_column.extend(tail_column)
                 
                 #self.table.tail_write(default_column)
@@ -160,14 +196,15 @@ class Query:
                     tail_page.write(val)
 
                 self.table.page_directory['base'][INDIRECTION_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, tail_rid)
-                self.table.page_directory['base'][SCHEMA_ENCODING_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, schema_encoding)
-                self.table.num_updates += 1
+                self.table.page_directory['base'][SCHEMA_ENCODING_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, tail_schema_encoding)
+                
 
 
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
     :param aggregate_columns: int  # Index of desired column to aggregate
+
     # this function is only called on the primary key.
     # Returns the summation of the given range upon success
     # Returns False if no record exists in the given range
@@ -186,15 +223,16 @@ class Query:
                 end_index = count
             count += 1
         
-        keys = key_lst[start_index:end_index]
-        sum = 0
-
-        for key in keys:
-            col = [0] * self.table.num_columns
-            col[aggregate_column_index] = 1
-            #sum += (self.select2(key, col))[0].columns[aggregate_column_index]
+        key_sum = key_lst[start_index : end_index + 1]
+        total_sum = 0
         
-        return sum
+        for key in key_sum:
+            query_column = [0] * self.table.num_columns
+            query_column[aggregate_column_index] = 1
+            val = self.select(key, 0, query_column)[0].columns[aggregate_column_index]
+            total_sum += val
+
+        return total_sum
 
     """
     incremenets one column of the record

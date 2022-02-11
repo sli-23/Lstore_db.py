@@ -12,7 +12,7 @@ query = Query(grades_table)
 # ---------------Insert--------------- #
 records = {}
 
-number_of_records = 5
+number_of_records = 2
 number_of_aggregates = 100
 seed(3562901)
 count = []
@@ -97,17 +97,57 @@ print('Testing update function.....')
 for i in count:
     print(i)
 
-print(query.select(92106433, 0, [1,1,1,1,1])[0].columns)
+base_column = []
+for i in range(0,9):
+    page = grades_table.page_directory['base'][i][0].pages[0].get(0)
+    page = int.from_bytes(bytes(page), byteorder='big')
+    base_column.append(page)
+
+print('Before the first update: ', base_column)
+
 updated_columns = [None, None, 0, None, None]
 query.update(count[0][0], *updated_columns)
 
-a = grades_table.page_directory['tail'][1][-1].get(0)
 
-# ----------------Sum--------------- #
-print('-----------------')
-print('Testing sum function.....')
+base_column = []
+for i in range(0,9):
+    page = grades_table.page_directory['base'][i][0].pages[0].get(0)
+    page = int.from_bytes(bytes(page), byteorder='big')
+    base_column.append(page)
+
+print('After the first update: ', base_column)
+
+tail_column = []
+for i in range(0,9):
+    record = grades_table.page_directory['tail'][i][0].get(0)
+    record = int.from_bytes(bytes(record), byteorder='big')
+    tail_column.append(record)
+
+print('The tail page for the first update: ', tail_column)
+
+print(grades_table.get_tail_columns(29233))
 
 
-# ----------------Delete--------------- #
-print('-----------------')
-print('Testing delete function.....')
+updated_columns = [None, None, None, 0, None]
+query.update(count[0][0], *updated_columns)
+
+base_column = []
+for i in range(0,9):
+    page = grades_table.page_directory['base'][i][0].pages[0].get(0)
+    page = int.from_bytes(bytes(page), byteorder='big')
+    base_column.append(page)
+
+print('After the second update: ', base_column)
+
+tail_column = []
+for i in range(0,9):
+    record = grades_table.page_directory['tail'][i][0].get(1)
+    record = int.from_bytes(bytes(record), byteorder='big')
+    tail_column.append(record)
+
+print('The tail page for the second update: ', tail_column)
+
+print(query.select(count[0][0], 0, [1,1,1,1,1])[0].columns)
+
+# if inrection != maxint then it has update:
+# tail's rid guide indirection
