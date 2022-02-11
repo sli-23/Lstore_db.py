@@ -26,8 +26,9 @@ class Query:
     """
 
     def delete(self, primary_key):
+        RID = self.index[self.primary_key].locate(primary_key)
         try:
-            columns.delete(rid)
+            column.delete(RID)
             self.num_records -= 1
             return True
         except:
