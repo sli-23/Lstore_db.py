@@ -3,7 +3,6 @@ from enum import EnumMeta
 from re import X
 from sys import byteorder
 from tkinter.tix import MAX
-from xmlrpc.client import MAXINT
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.config import *
@@ -197,7 +196,7 @@ class Query:
                 tail_schema_encoding = schema_encoding|base_schema_encoding
                 curr_time = int(time())
                 
-                default_column = [tail_schema_encoding, tail_rid, curr_time, schema_encoding]
+                default_column = [tail_indirection, tail_rid, curr_time, tail_schema_encoding]
                 default_column.extend(tail_column)
                 
                 #self.table.tail_write(default_column)

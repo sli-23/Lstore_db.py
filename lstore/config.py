@@ -1,12 +1,11 @@
 # Global Setting
 # Static Global Variables
-from xmlrpc.client import MAXINT
 
 # Page size: 4096b
 PAGE_SIZE = 4096
 RECORDS_PER_PAGE = PAGE_SIZE / 8
 MAXPAGE = 16
-MAXINT = MAXINT
+MAXINT = 2**64 - 1
 
 # Column 
 INDIRECTION_COLUMN = 0
