@@ -85,18 +85,25 @@ class Table:
     def get_base_page_range(self):
         return len(self.page_directory['base'][0])
     
+   # return the page range and index for a rid
     def get_record_info(self, rid): #using rid to find record's page_range and index in this page_range's page
         # record: page_range, page_index
         rid_multipage = self.page_directory['base'][RID_COLUMN] #get rid column
         multipage_range = round(rid // (RECORDS_PER_PAGE * MAXPAGE)) # in which multipage
         page_range = round(rid // RECORDS_PER_PAGE) # in which page_range in that multipage
-        rid_page = rid_multipage[multipage_range].pages[page_range]
+        rid_page = rid_multipage[multipage_range].pages[page_range] # in which page
         
         record_page_range = page_range
         record_page_index = 0
 
+        rid_bytes = rid.to_bytes(8, byteorder='big')
         for i in range(rid_page.num_records):
-            if rid_page.get(i) == rid:
-                record_page_index == i
-        
+            if rid_page.get(i) == rid_bytes:
+                record_page_index = i
+
         return record_page_range, record_page_index
+
+    def get_rid(self, record_index, record_page_range):
+        if record_page_range == 0:
+            return record_index * 1
+        return record_index + record_page_range * 512
