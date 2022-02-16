@@ -23,9 +23,14 @@
     - [Date Model](#date-model)
     - [Bufferpool Management](#bufferpool-management)
     - [Query_Interface](#query_interface)
+      - [Insert](#insert)
+      - [Select](#select)
+      - [Update](#update)
+      - [Sum](#sum)
+      - [Delete](#delete)
   - [Milestones](#milestones)
     - [Milestone 1](#milestone-1)
-      - [Structure Overview](#structure-overview)
+      - [Reconstruction Overview](#reconstruction-overview)
       - [Presentation](#presentation)
     - [Milestone 2](#milestone-2)
       - [Restructure Details](#restructure-details)
@@ -46,6 +51,15 @@ Lineage-based Data Store (**L-Store**) is a solution that combines the real-time
 
 ---
 ### Query_Interface
+#### Insert
+
+#### Select
+
+#### Update
+
+#### Sum
+
+#### Delete
 
 ---
 ## Milestones
@@ -55,25 +69,51 @@ Lineage-based Data Store (**L-Store**) is a solution that combines the real-time
 
 ```python
 """
+Global Setting:
+
+* Page size: 4096 kb 
+* Maximum records per page: 4096 / 8 = 512
+* Maximum page per Multipage: 16 pages
+* Maximum records per Multipage: 512 * 16 records
+* MAXINT： maximum numbers in 8 bytes can be stored
+
+Meta_data (Default Column):
+0: Indirection (MAXINT; using the constant MAXINT to dectect if there is any updates in that records)
+1: RID: numbers of records
+2: Time: current time
+3: Schema Encoding: if there is no updates, the column will be '1' (example, "00000", with update in column 3 will be "00100")
+
+"""
+```
+
+```python
+"""
 Data Model in Milestone 1:
 
 Page Directory {}
-|_______________Base Pages[], Tail Pages[]
-
+|_______________Base Pages[[Multipage 1], [Multipage 2]], Tail Pages[[Page 1], [Page 2]]
 
 Table
 |
 Page()
-|______Multipages (16 * [Page()])
+|______Multipages (16 * [Page()]); multipage.pages = [Page 1, Page 2, Page 3, Page 4]
+"""
+```
 
+```Python
+"""
+Query workflow:
 
-# Update Later after finishing Query.py
+Insert:
+* 
 """
 ```
 
 **Project Description**: [Milestone 1](https://expolab.org/ecs165a-winter2022/milestones/Milestone1.pdf)
 
-#### Structure Overview
+#### Reconstruction Overview
+* Applying Index in data structure
+
 
 
 #### Presentation
