@@ -121,8 +121,13 @@ Insert:
 
 ---
 ### Milestone 2
+
 **Objectives**: Single-threaded, In-memory & Durable L-Store
 * we focused on data durability by persisting data on a disk (non-volatile) and merging the base and tail data.
+* In the Milestone 2, **we’re going to persist records by saving the entire database to a file.** We already set ourselves up to do that by serializing rows into page-sized memory blocks.
+
+**Apply Index in L-Store:**
+* B Tree
 
 #### Restructure Details
 

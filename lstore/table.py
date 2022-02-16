@@ -1,4 +1,4 @@
-from lstore.index import Index
+from lstore.index_btree import Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
