@@ -21,13 +21,13 @@
   - [L-Store Fundamentals](#l-store-fundamentals)
     - [Introduction](#introduction)
     - [Date Model](#date-model)
+      - [Tree Indexes](#tree-indexes)
     - [Bufferpool Management](#bufferpool-management)
+      - [Basics](#basics)
+      - [Disk-Oriented DMBS](#disk-oriented-dmbs)
+      - [Meta-data](#meta-data)
+      - [BufferPool](#bufferpool)
     - [Query_Interface](#query_interface)
-      - [Insert](#insert)
-      - [Select](#select)
-      - [Update](#update)
-      - [Sum](#sum)
-      - [Delete](#delete)
   - [Milestones](#milestones)
     - [Milestone 1](#milestone-1)
       - [Reconstruction Overview](#reconstruction-overview)
@@ -46,20 +46,75 @@ Lineage-based Data Store (**L-Store**) is a solution that combines the real-time
 ### Date Model
 * Data storage in L-Store is columnar. The key idea is to separate the original version of a record inserted into the database (**base record**) and the subsequent updates to it (**tail records**)
 
+#### Tree Indexes
+
+
 ---
 ### Bufferpool Management
 
+#### Basics
+* **Volatile: faster and smaller**
+* **Non-volatile: slower and larger**
+* A **page** is a fixed-size block of data:
+  * It can contain tuples, meta-data, indexes, log records..
+  * Most systems do not mix page types.
+  * Some systems require a page to be self-contained
+  * **Each page is given a unique identifier:**
+    * ==The DBMS uses an indirection layer to map page ids to physical locations.==
+  * There are three different notions of "pages" in a DBMS:
+    * Hardware Page (usually 4 KB)
+    * OS Page (usually 4 KB)
+    * Database Page (1-16 KB)
+  * **Different DBMSs manage pages in files on disk in different ways:**
+    * Heap file Organization:
+      * A **heap file** is an unordered collection of pages where tuples that are stored in random order.
+        * Get / Delete Page
+        * Must also support iterating over all pages
+      * **Two ways to represent a heap file:**
+        * Linked list
+        * ==Page Directory (we use this in L-Store)==
+    * Sequential / Sorted File Organization
+    * Hashing File Organization
+* Need meta-data to keep track of what pages exist and which ones have free space.
+* **Page Directory:**
+  * The DBMS maintains special pages that tracks the location of data data pages in the database files.
+  * The directory also records the number of free slots per page.
+  * The DBMS has to make sure that the directory pages are in sync with the data pages.
+
+<center>
+<img src="/images/[images].png" width="600"/></center>
+
+#### Disk-Oriented DMBS
+![](images/2022-02-16-18-00-49.png)
+
+#### Meta-data
+How meta-data store?
+* A DBMS stores meta-data about databases in its internal catalogs:
+  * Tables, columns, indexes, views
+  * Users, permissions
+  * Internal statistics
+
+#### BufferPool
+* The page table keeps track of pages that are currently in memory
+* Maintains additional meta-data per page:
+  * Dirty Flag
+  * Pin/Reference Counter
+
+![](images/2022-02-16-18-06-13.png)
+
+**Merge:**
+* **Pass #0:**
+  * Reads every B pages of the table into memory
+  * Sorts them, and writes them back to disk
+  * Each sorted set of pages is called run.
+* **Pass #1,2,3,...**
+  * Recursively merges pairs of runs into runs twice as long
+  * Uses buffer pages
+
+![](images/2022-02-16-18-35-28.png)
+
 ---
 ### Query_Interface
-#### Insert
-
-#### Select
-
-#### Update
-
-#### Sum
-
-#### Delete
 
 ---
 ## Milestones
@@ -122,14 +177,50 @@ Insert:
 ---
 ### Milestone 2
 
+```python
+"""
+# Hierarchical Data Organization
+
+Fields
+|
+Records
+|
+Payloads
+|
+Pages
+|
+Binary data
+|
+Storage
+
+# Workflow in Data Organization in L-Store in Milestone 2
+Open Database open() - Table - New B-Tree() - BufferPool Frame - Physical Pages 
+
+"""
+```
+
 **Objectives**: Single-threaded, In-memory & Durable L-Store
 * we focused on data durability by persisting data on a disk (non-volatile) and merging the base and tail data.
 * In the Milestone 2, **we’re going to persist records by saving the entire database to a file.** We already set ourselves up to do that by serializing rows into page-sized memory blocks.
+* **Bufferpool**: a fixed constant number of pages in your bufferpool, which is defined when we create and initialize the database (i.e., invoking the open() database function).
+  * When a user requests a record that falls on a page **not currently in the bufferpool**, you need to bring the requested page first into the bufferpool. 
+  * If the bufferpool is full, then you need to evict a page from your pool to allow reading the new page. 
+  * If the page being evicted is dirty, then it must be written back to disk before discarding it. You may use any replacement policies of your choice, for example, Least-recently-used (LRU) or most-recently-used (MRU).
+  * The bufferpool holds both base and tail pages
+* **Dirty Pages**: When a page is updated in the bufferpool, it will deviate from the copy on disk, thus, the page is marked as dirty by the writer transaction. Your bufferpool needs to keep track of all the dirty pages in order to flush them back to disk upon replacement or when the database is closed (i.e., invoking the close() database function).
+* **(Un)Pining Pages:** Anytime, a page in the bufferpool is accessed, the page will be pinned first, and once the transaction no longer needs the page, it will unpin it. 
+  * The pin/unpin simply allows the bufferpool to track how many outstanding transactions are still accessing the page. 
+  * A page can only be replaced if it has a pin value of zero implying it is not currently needed by any active transactions.
+* **the database has open() and close() functions**
 
-**Apply Index in L-Store:**
+
+
+**Apply Indexes in L-Store:**
 * B Tree
 
 #### Restructure Details
+
+
 
 #### Presentation
 
@@ -139,6 +230,7 @@ Insert:
 * We focused on concurrency and multi-threaded transaction processing.
 
 #### Presentation
+
 
 ---
 ## Sources
