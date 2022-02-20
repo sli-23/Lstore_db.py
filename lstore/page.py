@@ -1,20 +1,31 @@
 from lstore.config import *
 
 """
-the maximum record should be 4096 / 8 bytes
+Update value:
+1. pinnedcount += 1
+2. update page
+3. dirty = True
+4. pinnedcount -= 1
 
- id
-----
-R1 1  
-R2 2 - 8 bytes
-R3 3 - 16 bytes
+Write value:
+1. pinnedcount += 1
+2. write page
+3. dirty = True
+4, pinnedcount -= 1
+
+get value (with index):
+1. pinnedcount += 1
+2. get()
+3. pinnedcount -= 1
 """
 
 class Page:
 
     def __init__(self):
-        self.num_records = 0
+        self.num_records = 0 
         self.data = bytearray(4096)
+        self.dirty = False
+        self.pinned = 0
 
     def has_capacity(self):                 
         return self.num_records < RECORDS_PER_PAGE    # When num_record == 512,the page is full.

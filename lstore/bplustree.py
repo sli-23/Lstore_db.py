@@ -1,301 +1,361 @@
-# B+ tree in python
+from __future__ import annotations
 
-import math
+from math import floor
+from pickle import NONE
+from random import randint
 
-# Node creation
+
 class Node:
+    """
+    Base node object.
+
+    Attributes:
+        order (int): The maximum number of keys each node can hold (branching factor).
+    """
+    uidCounter = 0
+
     def __init__(self, order):
         self.order = order
-        self.values = [] # RID in L-Store
-        self.keys = [] # Primary key in table
-        self.nextKey = None
-        self.parent = None
-        self.check_leaf = False
-        self.record_len = 10
+        self.parent: Node = None
+        self.keys = []
+        self.values = []
 
-    # Insert at the leaf
-    def insert_at_leaf(self, leaf, value, key):
-        if (self.values):
-            temp1 = self.values
-            for i in range(len(temp1)):
-                if (value == temp1[i]):
-                    self.keys[i].append(key)
-                    break
-                elif (value < temp1[i]):
-                    self.values = self.values[:i] + [value] + self.values[i:]
-                    self.keys = self.keys[:i] + [[key]] + self.keys[i:]
-                    break
-                elif (i + 1 == len(temp1)):
-                    self.values.append(value)
-                    self.keys.append([key])
-                    break
-        else:
-            self.values = [value]
-            self.keys = [[key]]
+        #  This is for Debugging purposes only!
+        Node.uidCounter += 1
+        self.uid = self.uidCounter
+
+    def split(self) -> Node:  # Split a full Node to two new ones.
+        left = Node(self.order)
+        right = Node(self.order)
+        mid = int(self.order // 2)
+
+        left.parent = right.parent = self
+
+        left.keys = self.keys[:mid]
+        left.values = self.values[:mid + 1]
+
+        right.keys = self.keys[mid + 1:]
+        right.values = self.values[mid + 1:]
+
+        self.values = [left, right]  # Setup the pointers to child nodes.
+
+        self.keys = [self.keys[mid]]  # Hold the first element from the right subtree.
+
+        # Setup correct parent for each child node.
+        for child in left.values:
+            if isinstance(child, Node):
+                child.parent = left
+
+        for child in right.values:
+            if isinstance(child, Node):
+                child.parent = right
+
+        return self  # Return the 'top node'
+
+    def getSize(self) -> int:
+        return len(self.keys)
+
+    def isEmpty(self) -> bool:
+        return len(self.keys) == 0
+
+    def isFull(self) -> bool:
+        return len(self.keys) == self.order - 1
+
+    def isNearlyUnderflow(self) -> bool:  # Used to check on keys, not data!
+        return len(self.keys) <= floor(self.order / 2)
+
+    def isUnderflow(self) -> bool:  # Used to check on keys, not data!
+        return len(self.keys) <= floor(self.order / 2) - 1
+
+    def isRoot(self) -> bool:
+        return self.parent is None
 
 
-# B plus tree
-class BplusTree:
+class LeafNode(Node):
     def __init__(self, order):
-        self.root = Node(order)
-        self.root.check_leaf = True
+        super().__init__(order)
 
-    # Insert operation
-    def insert(self, value, key):
-        value = str(value)
-        old_node = self.search(value)
-        old_node.insert_at_leaf(old_node, value, key)
+        self.prevLeaf: LeafNode = None
+        self.nextLeaf: LeafNode = None
 
-        if (len(old_node.values) == old_node.order):
-            node1 = Node(old_node.order)
-            node1.check_leaf = True
-            node1.parent = old_node.parent
-            mid = int(math.ceil(old_node.order / 2)) - 1
-            node1.values = old_node.values[mid + 1:]
-            node1.keys = old_node.keys[mid + 1:]
-            node1.nextKey = old_node.nextKey
-            old_node.values = old_node.values[:mid + 1]
-            old_node.keys = old_node.keys[:mid + 1]
-            old_node.nextKey = node1
-            self.insert_in_parent(old_node, node1.values[0], node1)
-
-    # Search operation for different operations
-    def search(self, value):
-        current_node = self.root
-        while(current_node.check_leaf == False):
-            temp2 = current_node.values
-            for i in range(len(temp2)):
-                if (value == temp2[i]):
-                    current_node = current_node.keys[i + 1]
-                    break
-                elif (value < temp2[i]):
-                    current_node = current_node.keys[i]
-                    break
-                elif (i + 1 == len(current_node.values)):
-                    current_node = current_node.keys[i + 1]
-                    break
-        return current_node
-
-    # Find the node
-    def find(self, value, key):
-        l = self.search(value)
-        for i, item in enumerate(l.values):
-            if item == value:
-                if key in l.keys[i]:
-                    return True
-                else:
-                    return False
-        return False
-
-    # Inserting at the parent
-    def insert_in_parent(self, n, value, ndash):
-        if (self.root == n):
-            rootNode = Node(n.order)
-            rootNode.values = [value]
-            rootNode.keys = [n, ndash]
-            self.root = rootNode
-            n.parent = rootNode
-            ndash.parent = rootNode
+    # TODO: Implement an improved version
+    def add(self, key, value):
+        if not self.keys:  # Insert key if it doesn't exist
+            self.keys.append(key)
+            self.values.append([value])
             return
 
-        parentNode = n.parent
-        temp3 = parentNode.keys
-        for i in range(len(temp3)):
-            if (temp3[i] == n):
-                parentNode.values = parentNode.values[:i] + \
-                    [value] + parentNode.values[i:]
-                parentNode.keys = parentNode.keys[:i +
-                                                  1] + [ndash] + parentNode.keys[i + 1:]
-                if (len(parentNode.keys) > parentNode.order):
-                    parentdash = Node(parentNode.order)
-                    parentdash.parent = parentNode.parent
-                    mid = int(math.ceil(parentNode.order / 2)) - 1
-                    parentdash.values = parentNode.values[mid + 1:]
-                    parentdash.keys = parentNode.keys[mid + 1:]
-                    value_ = parentNode.values[mid]
-                    if (mid == 0):
-                        parentNode.values = parentNode.values[:mid + 1]
-                    else:
-                        parentNode.values = parentNode.values[:mid]
-                    parentNode.keys = parentNode.keys[:mid + 1]
-                    for j in parentNode.keys:
-                        j.parent = parentNode
-                    for j in parentdash.keys:
-                        j.parent = parentdash
-                    self.insert_in_parent(parentNode, value_, parentdash)
+        for i, item in enumerate(self.keys):  # Otherwise, search key and append value.
+            if key == item:  # Key found => Append Value
+                self.values[i].append(value)  # Remember, this is a list of data. Not nodes!
+                break
 
-    # Delete a node
-    def delete(self, value, key):
-        node_ = self.search(value)
+            elif key < item:  # Key not found && key < item => Add key before item.
+                self.keys = self.keys[:i] + [key] + self.keys[i:]
+                self.values = self.values[:i] + [[value]] + self.values[i:]
+                break
 
-        temp = 0
-        for i, item in enumerate(node_.values):
-            if item == value:
-                temp = 1
+            elif i + 1 == len(self.keys):  # Key not found here. Append it after.
+                self.keys.append(key)
+                self.values.append([value])
+                break
 
-                if key in node_.keys[i]:
-                    if len(node_.keys[i]) > 1:
-                        node_.keys[i].pop(node_.keys[i].index(key))
-                    elif node_ == self.root:
-                        node_.values.pop(i)
-                        node_.keys.pop(i)
-                    else:
-                        node_.keys[i].pop(node_.keys[i].index(key))
-                        del node_.keys[i]
-                        node_.values.pop(node_.values.index(value))
-                        self.deleteEntry(node_, value, key)
-                else:
-                    print("Value not in Key")
-                    return
-        if temp == 0:
-            print("Value not in Tree")
-            return
+    def split(self) -> Node:  # Split a full leaf node. (Different method used than before!)
+        top = Node(self.order)
+        right = LeafNode(self.order)
+        mid = int(self.order // 2)
 
-    # Delete an entry
-    def deleteEntry(self, node_, value, key):
+        self.parent = right.parent = top
 
-        if not node_.check_leaf:
-            for i, item in enumerate(node_.keys):
-                if item == key:
-                    node_.keys.pop(i)
-                    break
-            for i, item in enumerate(node_.values):
-                if item == value:
-                    node_.values.pop(i)
-                    break
+        right.keys = self.keys[mid:]
+        right.values = self.values[mid:]
+        right.prevLeaf = self
+        right.nextLeaf = self.nextLeaf
 
-        if self.root == node_ and len(node_.keys) == 1:
-            self.root = node_.keys[0]
-            node_.keys[0].parent = None
-            del node_
-            return
-        elif (len(node_.keys) < int(math.ceil(node_.order / 2)) and node_.check_leaf == False) or (len(node_.values) < int(math.ceil((node_.order - 1) / 2)) and node_.check_leaf == True):
+        top.keys = [right.keys[0]]
+        top.values = [self, right]  # Setup the pointers to child nodes.
 
-            is_predecessor = 0
-            parentNode = node_.parent
-            PrevNode = -1
-            NextNode = -1
-            PrevK = -1
-            PostK = -1
-            for i, item in enumerate(parentNode.keys):
+        self.keys = self.keys[:mid]
+        self.values = self.values[:mid]
+        self.nextLeaf = right  # Setup pointer to next leaf
 
-                if item == node_:
-                    if i > 0:
-                        PrevNode = parentNode.keys[i - 1]
-                        PrevK = parentNode.values[i - 1]
+        return top  # Return the 'top node'
 
-                    if i < len(parentNode.keys) - 1:
-                        NextNode = parentNode.keys[i + 1]
-                        PostK = parentNode.values[i]
 
-            if PrevNode == -1:
-                ndash = NextNode
-                value_ = PostK
-            elif NextNode == -1:
-                is_predecessor = 1
-                ndash = PrevNode
-                value_ = PrevK
+class BPlusTree(object):
+    def __init__(self, order=10):
+        self.root: Node = LeafNode(order)  # First node must be leaf (to store data).
+        self.order: int = order
+
+    @staticmethod
+    def _find(node: Node, key):
+        for i, item in enumerate(node.keys):
+            if key < item:
+                return node.values[i], i
+            elif i + 1 == len(node.keys):
+                return node.values[i + 1], i + 1  # return right-most node/pointer.
+
+    @staticmethod
+    def _mergeUp(parent: Node, child: Node, index):
+        parent.values.pop(index)
+        pivot = child.keys[0]
+
+        for c in child.values:
+            if isinstance(c, Node):
+                c.parent = parent
+
+        for i, item in enumerate(parent.keys):
+            if pivot < item:
+                parent.keys = parent.keys[:i] + [pivot] + parent.keys[i:]
+                parent.values = parent.values[:i] + child.values + parent.values[i:]
+                break
+
+            elif i + 1 == len(parent.keys):
+                parent.keys += [pivot]
+                parent.values += child.values
+                break
+
+    def insert(self, key, value):
+        node = self.root
+
+        while not isinstance(node, LeafNode):  # While we are in internal nodes... search for leafs.
+            node, index = self._find(node, key)
+
+        # Node is now guaranteed a LeafNode!
+        node.add(key, value)
+
+        while len(node.keys) == node.order:  # 1 over full
+            if not node.isRoot():
+                parent = node.parent
+                node = node.split()  # Split & Set node as the 'top' node.
+                jnk, index = self._find(parent, node.keys[0])
+                self._mergeUp(parent, node, index)
+                node = parent
             else:
-                if len(node_.values) + len(NextNode.values) < node_.order:
-                    ndash = NextNode
-                    value_ = PostK
-                else:
-                    is_predecessor = 1
-                    ndash = PrevNode
-                    value_ = PrevK
+                node = node.split()  # Split & Set node as the 'top' node.
+                self.root = node  # Re-assign (first split must change the root!)
 
-            if len(node_.values) + len(ndash.values) < node_.order:
-                if is_predecessor == 0:
-                    node_, ndash = ndash, node_
-                ndash.keys += node_.keys
-                if not node_.check_leaf:
-                    ndash.values.append(value_)
-                else:
-                    ndash.nextKey = node_.nextKey
-                ndash.values += node_.values
+    # Using key to find value
+    def retrieve(self, key):
+        node = self.root
 
-                if not ndash.check_leaf:
-                    for j in ndash.keys:
-                        j.parent = ndash
+        while not isinstance(node, LeafNode):
+            node, index = self._find(node, key)
 
-                self.deleteEntry(node_.parent, value_, node_)
-                del node_
-            else:
-                if is_predecessor == 1:
-                    if not node_.check_leaf:
-                        ndashpm = ndash.keys.pop(-1)
-                        ndashkm_1 = ndash.values.pop(-1)
-                        node_.keys = [ndashpm] + node_.keys
-                        node_.values = [value_] + node_.values
-                        parentNode = node_.parent
-                        for i, item in enumerate(parentNode.values):
-                            if item == value_:
-                                p.values[i] = ndashkm_1
-                                break
-                    else:
-                        ndashpm = ndash.keys.pop(-1)
-                        ndashkm = ndash.values.pop(-1)
-                        node_.keys = [ndashpm] + node_.keys
-                        node_.values = [ndashkm] + node_.values
-                        parentNode = node_.parent
-                        for i, item in enumerate(p.values):
-                            if item == value_:
-                                parentNode.values[i] = ndashkm
-                                break
-                else:
-                    if not node_.check_leaf:
-                        ndashp0 = ndash.keys.pop(0)
-                        ndashk0 = ndash.values.pop(0)
-                        node_.keys = node_.keys + [ndashp0]
-                        node_.values = node_.values + [value_]
-                        parentNode = node_.parent
-                        for i, item in enumerate(parentNode.values):
-                            if item == value_:
-                                parentNode.values[i] = ndashk0
-                                break
-                    else:
-                        ndashp0 = ndash.keys.pop(0)
-                        ndashk0 = ndash.values.pop(0)
-                        node_.keys = node_.keys + [ndashp0]
-                        node_.values = node_.values + [ndashk0]
-                        parentNode = node_.parent
-                        for i, item in enumerate(parentNode.values):
-                            if item == value_:
-                                parentNode.values[i] = ndash.values[0]
-                                break
+        for i, item in enumerate(node.keys):
+            if key == item:
+                return node.values[i]
 
-                if not ndash.check_leaf:
-                    for j in ndash.keys:
-                        j.parent = ndash
-                if not node_.check_leaf:
-                    for j in node_.keys:
-                        j.parent = node_
-                if not parentNode.check_leaf:
-                    for j in parentNode.keys:
-                        j.parent = parentNode
+        return None
 
+    def delete(self, key):
+        node = self.root
 
-# Print the tree
-def printTree(tree):
-    lst = [tree.root]
-    level = [0]
-    leaf = None
-    flag = 0
-    lev_leaf = 0
+        while not isinstance(node, LeafNode):
+            node, parentIndex = self._find(node, key)
 
-    node1 = Node(str(level[0]) + str(tree.root.values))
+        if key not in node.keys:
+            return False
 
-    while (len(lst) != 0):
-        x = lst.pop(0)
-        lev = level.pop(0)
-        if (x.check_leaf == False):
-            for i, item in enumerate(x.keys):
-                print(item.values)
+        index = node.keys.index(key)
+        node.values[index].pop()  # Remove the last inserted data.
+
+        if len(node.values[index]) == 0:
+            node.values.pop(index)  # Remove the list element.
+            node.keys.pop(index)
+
+            while node.isUnderflow() and not node.isRoot():
+                # Borrow attempt:
+                prevSibling = BPlusTree.getPrevSibling(node)
+                nextSibling = BPlusTree.getNextSibling(node)
+                jnk, parentIndex = self._find(node.parent, key)
+
+                if prevSibling and not prevSibling.isNearlyUnderflow():
+                    self._borrowLeft(node, prevSibling, parentIndex)
+                elif nextSibling and not nextSibling.isNearlyUnderflow():
+                    self._borrowRight(node, nextSibling, parentIndex)
+                elif prevSibling and prevSibling.isNearlyUnderflow():
+                    self._mergeOnDelete(prevSibling, node)
+                elif nextSibling and nextSibling.isNearlyUnderflow():
+                    self._mergeOnDelete(node, nextSibling)
+
+                node = node.parent
+
+            if node.isRoot() and not isinstance(node, LeafNode) and len(node.values) == 1:
+                self.root = node.values[0]
+                self.root.parent = None
+
+    @staticmethod
+    def _borrowLeft(node: Node, sibling: Node, parentIndex):
+        if isinstance(node, LeafNode):  # Leaf Redistribution
+            key = sibling.keys.pop(-1)
+            data = sibling.values.pop(-1)
+            node.keys.insert(0, key)
+            node.values.insert(0, data)
+
+            node.parent.keys[parentIndex - 1] = key  # Update Parent (-1 is important!)
+        else:  # Inner Node Redistribution (Push-Through)
+            parent_key = node.parent.keys.pop(-1)
+            sibling_key = sibling.keys.pop(-1)
+            data: Node = sibling.values.pop(-1)
+            data.parent = node
+
+            node.parent.keys.insert(0, sibling_key)
+            node.keys.insert(0, parent_key)
+            node.values.insert(0, data)
+
+    @staticmethod
+    def _borrowRight(node: LeafNode, sibling: LeafNode, parentIndex):
+        if isinstance(node, LeafNode):  # Leaf Redistribution
+            key = sibling.keys.pop(0)
+            data = sibling.values.pop(0)
+            node.keys.append(key)
+            node.values.append(data)
+            node.parent.keys[parentIndex] = sibling.keys[0]  # Update Parent
+        else:  # Inner Node Redistribution (Push-Through)
+            parent_key = node.parent.keys.pop(0)
+            sibling_key = sibling.keys.pop(0)
+            data: Node = sibling.values.pop(0)
+            data.parent = node
+
+            node.parent.keys.append(sibling_key)
+            node.keys.append(parent_key)
+            node.values.append(data)
+
+    @staticmethod
+    def _mergeOnDelete(l_node: Node, r_node: Node):
+        parent = l_node.parent
+
+        jnk, index = BPlusTree._find(parent, l_node.keys[0])  # Reset pointer to child
+        parent_key = parent.keys.pop(index)
+        parent.values.pop(index)
+        parent.values[index] = l_node
+
+        if isinstance(l_node, LeafNode) and isinstance(r_node, LeafNode):
+            l_node.nextLeaf = r_node.nextLeaf  # Change next leaf pointer
         else:
-            for i, item in enumerate(x.keys):
-                print(item.values)
-            if (flag == 0):
-                lev_leaf = lev
-                leaf = x
-                flag = 1
+            l_node.keys.append(parent_key)  # TODO Verify this
+            for r_node_child in r_node.values:
+                r_node_child.parent = l_node
 
+        l_node.keys += r_node.keys
+        l_node.values += r_node.values
+
+    @staticmethod
+    def getPrevSibling(node: Node) -> Node:
+        if node.isRoot() or not node.keys:
+            return None
+        jnk, index = BPlusTree._find(node.parent, node.keys[0])
+        return node.parent.values[index - 1] if index - 1 >= 0 else None
+
+    @staticmethod
+    def getNextSibling(node: Node) -> Node:
+        if node.isRoot() or not node.keys:
+            return None
+        jnk, index = BPlusTree._find(node.parent, node.keys[0])
+
+        return node.parent.values[index + 1] if index + 1 < len(node.parent.values) else None
+
+    def printTree(self):
+        if self.root.isEmpty():
+            print('The bpt+ Tree is empty!')
+            return
+        queue = [self.root, 0]  # Node, Height... Not systematic but it works
+
+        while len(queue) > 0:
+            node = queue.pop(0)
+            height = queue.pop(0)
+
+            if not isinstance(node, LeafNode):
+                queue += self.intersperse(node.values, height + 1)
+            print('Level ' + str(height), '|'.join(map(str, node.keys)), ' -->\t current -> ', node.uid,
+                  '\t parent -> ',
+                  node.parent.uid if node.parent else None)
+
+    def getLeftmostLeaf(self):
+        if not self.root:
+            return None
+
+        node = self.root
+        while not isinstance(node, LeafNode):
+            node = node.values[0]
+
+        return node
+
+    def getRightmostLeaf(self):
+        if not self.root:
+            return None
+
+        node = self.root
+        while not isinstance(node, LeafNode):
+            node = node.values[-1]
+
+    def showAllData(self):
+        node = self.getLeftmostLeaf()
+        if not node:
+            return None
+
+        while node:
+            for node_data in node.values:
+                print('[{}]'.format(', '.join(map(str, node_data))), end=' -> ')
+
+            node = node.nextLeaf
+        print('Last node')
+
+    def showAllDataReverse(self):
+        node = self.getRightmostLeaf()
+        if not node:
+            return None
+
+        while node:
+            for node_data in reversed(node.values):
+                print('[{}]'.format(', '.join(map(str, node_data))), end=' <- ')
+
+            node = node.prevLeaf
+        print()
+
+    @staticmethod
+    def intersperse(lst, item):
+        result = [item] * (len(lst) * 2)
+        result[0::2] = lst
+        return result

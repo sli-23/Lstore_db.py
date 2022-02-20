@@ -38,9 +38,7 @@ class Index:
     """
 
     def create_index(self, column_number):
-        if self.table.num_columns <= column_number:
-            return
-        
+        pass
 
 
     """
@@ -48,12 +46,8 @@ class Index:
     """
 
     def drop_index(self, column_number, key, index):
-        # update value "index" to the key of No.column_number.
-        self.indices[column_number].update({key: index})
+        pass
     
     def set_index(self, column_number, key, index):
         # update value "index" to the key of No.column_number.
         self.indices[column_number].update({key: index})
-
-    def update_index(self, rid, column_number, new_key):
-        pass

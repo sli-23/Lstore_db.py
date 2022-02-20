@@ -27,7 +27,7 @@
       - [Disk-Oriented DMBS](#disk-oriented-dmbs)
       - [Meta-data](#meta-data)
       - [BufferPool](#bufferpool)
-    - [Query_Interface](#query_interface)
+    - [Query Interface](#query-interface)
   - [Milestones](#milestones)
     - [Milestone 1](#milestone-1)
       - [Reconstruction Overview](#reconstruction-overview)
@@ -114,7 +114,7 @@ How meta-data store?
 ![](images/2022-02-16-18-35-28.png)
 
 ---
-### Query_Interface
+### Query Interface
 
 ---
 ## Milestones
@@ -213,6 +213,12 @@ Open Database open() - Table - New B-Tree() - BufferPool Frame - Physical Pages
   * A page can only be replaced if it has a pin value of zero implying it is not currently needed by any active transactions.
 * **the database has open() and close() functions**
 
+**How SQLite works:**
+* The pager receives commands to read or write pages of data. It is responsible for reading/writing at appropriate offsets in the database file. It also keeps a cache of recently-accessed pages in memory, and determines when those pages need to be written back to disk.
+* **Data persistence:**
+  * opening the database file
+  * initializing a pager data structure
+  * initializing a table data structure
 
 
 **Apply Indexes in L-Store:**
@@ -223,6 +229,8 @@ Open Database open() - Table - New B-Tree() - BufferPool Frame - Physical Pages
 
 
 #### Presentation
+
+[Milestone 2: Single-threaded, In-memory & Durable L-Store](https://docs.google.com/presentation/d/1VKVODeaTPzbZqPwjl5NT24Lq24jWS0v0ACGn863NOCY/edit?usp=sharing)
 
 ---
 ### Milestone 3

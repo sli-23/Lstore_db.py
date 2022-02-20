@@ -2,7 +2,7 @@
 from lstore.db import Database
 from lstore.query import Query
 from lstore.config import *
-from lstore.bplustree import BplusTree, Node, printTree
+from lstore.BPlusTree import BplusTree, Node, printTree
 from lstore.index_bplustree import Index
 from random import choice, randint, sample, seed
 

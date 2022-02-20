@@ -1,4 +1,4 @@
-from lstore.index_btree import Index
+from lstore.index_bplustree import Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
@@ -62,7 +62,6 @@ class Table:
 
 
     def base_write(self, data):
-        self.num_records += 1
         for i, value in enumerate(data):
             multiPages = self.page_directory["base"][i][-1]
             page = multiPages.get_current()
@@ -210,3 +209,33 @@ class Table:
     def delete_rid_tail(self, page_range, record_index):
         page = self.page_directory['tail'][RID_COLUMN]
         page[page_range].data[record_index * 8 : (record_index + 1) * 8] = (0).to_bytes(8, byteorder='big')
+
+    
+    def rid_base(self, rid):
+        record_multipage = 0
+        if rid % (RECORDS_PER_PAGE * MAXPAGE) == 0:
+            record_multipage = rid / (RECORDS_PER_PAGE * MAXPAGE) - 1
+        else:
+            record_multipage = rid // (RECORDS_PER_PAGE * MAXPAGE)
+
+        if record_multipage < 0:
+            record_multipage = 0
+        
+        rid = rid - RECORDS_PER_PAGE * MAXPAGE * record_multipage
+        
+        record_page_range = 0
+        if rid % RECORDS_PER_PAGE == 0:
+            record_page_range = (rid / RECORDS_PER_PAGE) - 1
+        else:
+            record_page_range = (rid // RECORDS_PER_PAGE)
+
+        if record_page_range < 0:
+            record_page_range = 0
+
+        rid = rid - (RECORDS_PER_PAGE * record_page_range)
+
+        record_index = rid - 1
+        if record_index < 0:
+            record_index = 0
+
+        return int(record_multipage), int(record_page_range), int(record_index)

@@ -1,12 +1,20 @@
 from lstore.table import Table
+from lstore.bufferpool import *
+from lstore.index_bplustree import BPlusTree
+import time
+import pickle #only can be used in meta data
+from os import path, mkdir, remove
+import sys
 
 class Database():
 
     def __init__(self):
+        self.path = ""
         self.tables = {}  # Use a hash map to store tables.
+        self.bufferpool = 0
 
-    # Not required for milestone1
     def open(self, path):
+        
         pass
 
     def close(self):
@@ -26,8 +34,6 @@ class Database():
             table = Table(name, num_columns, key_index)
         self.tables[name] = table
         return table
-        
-    # not sure why the skeleton code has a return here; I figured "self.tables.append(table);" would be more appropriate after it's created.
 
     """
     # Deletes the specified table

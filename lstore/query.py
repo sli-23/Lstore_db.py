@@ -54,8 +54,6 @@ class Query:
             self.table.num_updates -= 1    
         self.table.num_records -= 1
 
-
-    
     """
     # Insert a record with specified columns
     # Return True upon successful insertion
@@ -211,7 +209,6 @@ class Query:
                 self.table.page_directory['base'][INDIRECTION_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, tail_rid)
                 self.table.page_directory['base'][SCHEMA_ENCODING_COLUMN][tail_record_multipage].pages[tail_record_page_range].updata(tail_record_index, tail_schema_encoding)
                 
-
 
     """
     :param start_range: int         # Start of the key range to aggregate 
