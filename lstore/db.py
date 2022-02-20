@@ -14,8 +14,11 @@ class Database():
         self.bufferpool = 0
 
     def open(self, path):
-        
-        pass
+        self.path = path
+        try:
+            os.mkdir(path)
+        except:
+            print("Dir already exist.")
 
     def close(self):
         pass
