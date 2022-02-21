@@ -220,12 +220,7 @@ Open Database open() - Table - New B-Tree() - BufferPool Frame - Physical Pages
   * initializing a pager data structure
   * initializing a table data structure
 
-
-**Apply Indexes in L-Store:**
-* B Tree
-
 #### Restructure Details
-
 
 
 #### Presentation

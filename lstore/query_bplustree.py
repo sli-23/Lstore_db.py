@@ -39,7 +39,7 @@ class Query:
         self.table.num_records += 1
         rid = self.table.num_records #num of records
         
-        curr_time = int(time())
+        curr_time = int(time()) 
 
         schema_encoding = '0' * self.table.num_columns
         schema_encoding = int.from_bytes(schema_encoding.encode(), byteorder='big')

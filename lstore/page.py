@@ -1,31 +1,16 @@
 from lstore.config import *
 
-"""
-Update value:
-1. pinnedcount += 1
-2. update page
-3. dirty = True
-4. pinnedcount -= 1
 
-Write value:
-1. pinnedcount += 1
-2. write page
-3. dirty = True
-4, pinnedcount -= 1
-
-get value (with index):
-1. pinnedcount += 1
-2. get()
-3. pinnedcount -= 1
-"""
 
 class Page:
 
     def __init__(self):
         self.num_records = 0 
         self.data = bytearray(4096)
+        
+        #bufferpool
         self.dirty = False
-        self.pinned = 0
+        self.pinnedcount = 0
 
     def has_capacity(self):                 
         return self.num_records < RECORDS_PER_PAGE    # When num_record == 512,the page is full.

@@ -3,6 +3,7 @@ from random import choice, randint, sample, seed
 from lstore.query_bplustree import Query
 from lstore.db import Database
 from lstore.config import *
+from collections import OrderedDict
 
 
 db = Database()
@@ -40,3 +41,19 @@ for key in records:
     else:
         pass
         # print('select on', key, ':', record)
+
+od = OrderedDict()
+od['a'] = 1
+od['b'] = 1
+od['c'] = 1
+od['d'] = 1
+
+for key, value in od.items():
+    print(key, value)
+
+od.pop('a')
+od['a'] = 1
+
+print('\nAfter re-inserting')
+for key, value in od.items():
+    print(key, value)

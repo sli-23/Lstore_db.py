@@ -1,7 +1,7 @@
 import os
 from lstore.config import *
 from collections import OrderedDict
-from lstore.page import page
+from lstore.page import Page
 
 """
 BufferPool:
@@ -11,13 +11,33 @@ BufferPool:
 - Frame 
 """
 
+"""
+Update value:
+1. pinnedcount += 1
+2. update page
+3. dirty = True
+4. pinnedcount -= 1
+
+Write value:
+1. pinnedcount += 1
+2. write page
+3. dirty = True
+4, pinnedcount -= 1
+
+get value (with index):
+1. pinnedcount += 1
+2. get()
+3. pinnedcount -= 1
+"""
+
 class Bufferpool():
     
     def __int__(self):
-        self.bufferpool_size = 0
         self.path = ""
-        self.pages = []
-        self.table = {} #TODO: multithreading in Milestone 3
+        self.bufferpool = OrderedDict() #key = tablename; val = bufferframe
 
-        
+
+
+
+
 

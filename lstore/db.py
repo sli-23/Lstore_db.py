@@ -11,13 +11,16 @@ class Database():
     def __init__(self):
         self.path = ""
         self.tables = {}  # Use a hash map to store tables.
-        self.bufferpool = 0
+        self.bufferpool = Bufferpool()
 
+    # TODO: bufferpool stored in disk / merge
     def open(self, path):
-        
+        self.path = path
+        # bufferpool - path
         pass
 
     def close(self):
+        # close bufferpool (evict pages in bufferpool)
         pass
 
     """
