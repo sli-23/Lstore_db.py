@@ -15,8 +15,6 @@ class Database():
 
     # TODO: bufferpool stored in disk / merge
     def open(self, path):
-        self.path = path
-        # bufferpool - path
         pass
 
     def close(self):
