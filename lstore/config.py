@@ -6,6 +6,7 @@ PAGE_SIZE = 4096
 RECORDS_PER_PAGE = PAGE_SIZE / 8
 MAXPAGE = 16
 MAXINT = 2**64 - 1
+BUFFERPOOL_SIZE = 1000 #the default buffer pool will be 1,000 pages or 4 MB
 
 # Column 
 INDIRECTION_COLUMN = 0

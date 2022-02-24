@@ -1,25 +1,54 @@
 from lstore.table import Table
 from lstore.bufferpool import *
 from lstore.index_bplustree import BPlusTree
+from lstore.config import *
 import time
 import pickle #only can be used in meta data
-from os import path, mkdir, remove
+import os
 import sys
 
 class Database():
 
     def __init__(self):
         self.path = ""
-        self.tables = {}  # Use a hash map to store tables.
-        self.bufferpool = Bufferpool()
+        self.tables = {} 
+        self.bufferpool = Bufferpool() #the default buffer pool will be 1,000 pages or 4 MB
+        self.primary_key = {}
 
     # TODO: bufferpool stored in disk / merge
     def open(self, path):
-        pass
+        try:
+            self.path = path
+            if not os.path.exists(path):
+                os.makedirs(path)
+            self.bufferpool.initial_path(path)
+            tabledata_file = open(path + '/Tables', 'wb')
+            tabledata_file.close()
+            key_file = open(path + '/Primary_Key', 'wb')
+            key_file.close()
+        except:
+            tabledata_file = open(path + '/Tables', 'rb')
+            tabledata_file.close()
+            key_file = open(path + '/Primary_Key', 'rb')
+            key_file.close()
+
+    def keydict(self, table_name, table):
+        key = table.key
+        column = table.page_directory['base'][DEFAULT_COLUMN + key]
+        self.primary_key[table_name] = column
 
     def close(self):
-        # close bufferpool (evict pages in bufferpool)
-        pass
+        for name, table in self.tables.items():
+            #table.close() #it will trigger merger and evict all
+            self.keydict(name, table)
+        
+        key_file = open(self.path + '/Primary_Key', 'wb')
+        pickle.dump(self.primary_key, key_file)
+        key_file.close()
+
+        tabledata_file = open(self.path + '/Tables', 'wb')
+        pickle.dump(self.tables, tabledata_file)
+        tabledata_file.close()
 
     """
     # Creates a new table

@@ -7,7 +7,9 @@ from collections import OrderedDict
 
 
 db = Database()
+db.open('./ECS165')
 grades_table = db.create_table('Grades', 5, 0)
+grades_table2 = db.create_table('Grades2', 5, 0)
 query = Query(grades_table)
 
 records = {}
@@ -42,18 +44,5 @@ for key in records:
         pass
         # print('select on', key, ':', record)
 
-od = OrderedDict()
-od['a'] = 1
-od['b'] = 1
-od['c'] = 1
-od['d'] = 1
+db.close()
 
-for key, value in od.items():
-    print(key, value)
-
-od.pop('a')
-od['a'] = 1
-
-print('\nAfter re-inserting')
-for key, value in od.items():
-    print(key, value)

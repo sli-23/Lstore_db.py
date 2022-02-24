@@ -26,6 +26,8 @@ class Query:
     """
 
     def delete(self, primary_key):
+        base_rid = self.table.index.locate(self.table.key, primary_key)[0]
+        #lock
         pass
     
     """
@@ -42,7 +44,7 @@ class Query:
         curr_time = int(time()) 
 
         schema_encoding = '0' * self.table.num_columns
-        schema_encoding = int.from_bytes(schema_encoding.encode(), byteorder='big')
+        schema_encoding = int.from_bytes(schema_encoding.encode(), byteorder='big') #int
 
         default_column = [indirection, rid, curr_time, schema_encoding]
         column = list(columns)
@@ -78,29 +80,24 @@ class Query:
 
         # Index
         # TODO: if index_val is not the key
+        # index_value is always the key (edit later)
+
         rid = self.table.index.locate(index_column, index_value)
         if len(rid) == 0:
             return False
         rid = rid[0]
-
-        # Using rid to find page directory: (multipage)(page range)(page index)
-        multipage_range, page_range, page_index = self.table.rid_base(rid)
         
-        # Base - Indirection
-        indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(page_index) #bytes
+        # TODO: update after finishing bufferpool
+        multipage_index, page_range, record_index = self.table.rid_base(rid)
+        indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_index].pages[page_range].get(record_index)
         indirection_int = int.from_bytes(bytes(indirection), byteorder='big')
 
-        # Base page
+        # base record
         record.append(index_value) 
         for col in range(1, self.table.num_columns):
             val = self.table.index.locate(col, rid)[0]
             record.append(val)
 
-        # TODO: update after finishing bufferpool
-        # If has recent record / updates
-        if indirection_int != MAXINT: #has updates
-            pass
-        
         # query_column
         for col, val in enumerate(query_columns):
             if val == 0:
@@ -108,10 +105,13 @@ class Query:
             else:
                 continue
 
-        record_class = Record(rid, index_value, record)
-        records.append(record_class)
+        if indirection_int != MAXINT: #detect updates
+            self.table.get_recent_tail_record(indirection_int) #Record
+
+        # combine.
         
-        return records
+        return [Record(rid, index_value, record)]
+
 
     """
     # Update a record with specified key and columns
@@ -120,6 +120,44 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
+        self.table.num_updates += 1
+
+        if len(columns) != self.table.num_columns:
+            return False
+
+        rid = self.table.index.locate(self.table.key, primary_key)[0]
+
+        # base indirection
+        multipage_index, page_range, record_index = self.table.rid_base(rid)
+        base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_index].pages[page_range].get(record_index)
+
+        # conditional (using indirection)
+        tail_rid = int.from_bytes(('r' + str(self.table.num_updates)).encode(),byteorder = 'big') #int
+        if base_indirection != MAXINT: #if the record has already updated
+            pass
+        else: # first update
+            pass
+
+
+        columns = list(columns)
+        for col, val in enumerate(columns):
+            if val == None:
+                continue
+            else:
+                #bufferpool
+                pass
+
+        """
+        Functions
+        - create tail record (tail write) - similar to select (will return a Record object)
+        - Using indirection to get recent record (applying schema encoding): rid key columns
+        - Update new tail record: schema encoding -> tail write
+
+        """
+
+        # Update schema encoding
+
+
         pass
 
     """
