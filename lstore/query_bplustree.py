@@ -113,18 +113,24 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
+        columns = list(columns)
         if len(columns) != self.table.num_columns:
             print('Detect Error')
             return False
 
         rid = self.table.index.locate(self.table.key, primary_key)[0]
         (multipage_range, page_range, record_index) = self.table.rid_base(rid)
-        base_indirection = self.table.page_directory['base'][multipage_range].pages[page_range].get(record_index) #bytes
+        base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index) #bytes
         base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
 
         #insert tail record
 
         #update index
+        for col, value in enumerate(columns):
+            if value == None:
+                continue
+            else:
+                self.table.index.update_index(primary_key, col, value)
 
 
     """

@@ -1,4 +1,4 @@
-from copyreg import pickle
+import pickle
 from datetime import datetime
 import os
 from tkinter import Frame
@@ -11,9 +11,9 @@ import copy
 import time
 import sys
 
-class Bufferpool:
+class BufferPool:
     
-    def __int__(self, capacity=BUFFERPOOL_SIZE):
+    def __init__(self, capacity=BUFFERPOOL_SIZE):
         self.path = ""
         self.capacity = capacity
         self.page_num = 0
@@ -32,12 +32,15 @@ class Bufferpool:
         return self.page_bufferpool[page_id]
 
     def buffer_to_path(self, table_name, column_id, multipage_id, page_range_id, page_id):
-        path = os.path.join(self.path, table_name, str(column_id), str(multipage_id), str(page_range_id), str(page_id) + 'pkg')
+        path = os.path.join(self.path, table_name, str(column_id) + str(multipage_id)+ str(page_range_id) + str(page_id) + '.pkg')
         return path
+    
+    def print(self):
+        print(self.page_bufferpool)
 
-    def read_page(self, page, path):
+    def read_page(self, path):
         f = open(path, 'rb')
-        page == pickle.load(f)
+        page = pickle.load(f)
         buffer_page = Page()
         buffer_page.num_records = page.num_records
         buffer_page.data = page.data
@@ -56,8 +59,10 @@ class Bufferpool:
     def add_page(self, buffer_id, default = True):
         if default:
             self.page_bufferpool[buffer_id] = None
+            self.lru_cache[buffer_id] = None
         else:
             self.page_bufferpool[buffer_id] = Page()
+            self.lru_cache[buffer_id] = Page()
             self.page_bufferpool[buffer_id].dirty = True
 
     def remove_page(self):
@@ -77,7 +82,7 @@ class Bufferpool:
         self.page_bufferpool[oldest_budder_id] = None
         del self.least_used[oldest_budder_id]
 
-
+    #需要改
     def get_page(self, table_name, column_id, multipage_id, page_range_id, page_id):
         buffer_id = (table_name, column_id, multipage_id, page_range_id, page_id)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, page_id)
@@ -88,6 +93,7 @@ class Bufferpool:
                 self.remove_page()
             self.add_page(buffer_id, default= False)
             dirname = os.path.dirname(path)
+            
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
             f = open(path, 'w+')
@@ -99,7 +105,7 @@ class Bufferpool:
                     self.remove_page()
                 self.page_bufferpool[buffer_id] = self.read_page(path)
         
-        self.least_used[buffer_id] = time()
+        #self.least_used[buffer_id] = time()
         
         return self.page_bufferpool[buffer_id]
 

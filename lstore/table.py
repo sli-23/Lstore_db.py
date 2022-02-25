@@ -2,7 +2,7 @@ from email.mime import base
 import enum
 
 from numpy import delete
-from lstore.bufferpool import Bufferpool
+from lstore.bufferpool import BufferPool
 from lstore.index_bplustree import Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
@@ -36,7 +36,7 @@ class Table:
         self.index = Index(self)
         self.key_lst = []
 
-        self.bufferpool = Bufferpool()
+        self.bufferpool = BufferPool()
 
         """
         Each base page has a merge queue

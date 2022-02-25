@@ -13,7 +13,7 @@ class Database():
     def __init__(self):
         self.path = ""
         self.tables = {} 
-        self.bufferpool = Bufferpool() #the default buffer pool will be 1,000 pages or 4 MB
+        self.bufferpool = BufferPool() #the default buffer pool will be 1,000 pages or 4 MB
         self.primary_key = {}
 
     # TODO: bufferpool stored in disk / merge
