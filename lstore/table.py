@@ -3,7 +3,7 @@ import enum
 
 from numpy import delete
 from lstore.bufferpool import BufferPool
-from lstore.index_bplustree import Index
+from lstore.index import Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time

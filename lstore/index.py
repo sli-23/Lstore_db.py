@@ -14,7 +14,7 @@ class Index:
 
     def __init__(self, table):
         self.table = table
-        self.indices = [BPlusTree(200) for _ in range(table.num_columns)]  # Give a default value for indices.
+        self.indices = [BPlusTree(150) for _ in range(table.num_columns)]  # Give a default value for indices.
 
     """
     # returns the location of all records with the given value on column "column"

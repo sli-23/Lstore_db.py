@@ -1,5 +1,5 @@
 from lstore.table import Table, Record
-from lstore.index_btree import Index
+from lstore.index import Index
 
 class TransactionWorker:
 

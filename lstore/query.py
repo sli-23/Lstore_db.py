@@ -4,7 +4,7 @@ from re import X
 from sys import byteorder
 from tkinter.tix import MAX
 from lstore.table import Table, Record
-from lstore.index_btree import Index
+from lstore.index import Index
 from lstore.config import *
 from time import time
 from lstore.page import Page, MultiPage

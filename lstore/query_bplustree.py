@@ -1,12 +1,11 @@
 from email.mime import base
-import enum
 from pickle import FALSE
 from types import NoneType
 from webbrowser import MacOSX
 
 from numpy import column_stack
 from lstore.table import Table, Record
-from lstore.index_bplustree import Index
+from lstore.index import Index
 from lstore.config import *
 from time import time
 
@@ -31,9 +30,9 @@ class Query:
     """
 
     def delete(self, primary_key):
-        base_rid = self.table.index.locate(self.table.key, primary_key)[0]
-        #lock
-        pass
+        tree = self.table.index.indices[self.table.key]
+        tree.delete(primary_key)
+            
     
     """
     # Insert a record with specified columns

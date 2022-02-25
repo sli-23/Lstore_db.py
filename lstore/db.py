@@ -1,6 +1,6 @@
 from lstore.table import Table
 from lstore.bufferpool import *
-from lstore.index_bplustree import BPlusTree
+from lstore.index import Index
 from lstore.config import *
 import time
 import pickle #only can be used in meta data
