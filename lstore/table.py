@@ -1,3 +1,4 @@
+import enum
 from lstore.bufferpool import BufferPool
 from lstore.index import Index
 from lstore.config import *
@@ -93,11 +94,14 @@ class Table:
 
     def tail_write(self, data):
         for col, val in enumerate(data):
-            tail_page = self.table.page_directory['tail'][col][-1]
-            if not tail_page.has_capacity():
-                self.table.page_directory['tail'][col].append(Page())
-                tail_page = self.table.page_directory['tail'][col][-1]
-            tail_page.write(val)
+            if val == None:
+                continue
+            else:
+                tail_page = self.page_directory['tail'][col][-1]
+                if not tail_page.has_capacity():
+                    self.page_directory['tail'][col].append(Page())
+                    tail_page = self.page_directory['tail'][col][-1]
+                tail_page.write(val)
 
     def rid_base(self, rid):
         record_multipage = 0
@@ -146,5 +150,18 @@ class Table:
         self.lock.release()
         pass
 
-    def close(self):
-        pass
+    def schema_encoding(self, column):
+        schema_encoding = ''
+        for col, val in enumerate(column):
+            if val == None:
+                schema_encoding += '0'
+            else:
+                schema_encoding += '1'
+
+        return schema_encoding
+
+    def merge(self, primary_key):
+        #get rid
+        base_rid =  self.index.locate(self.table.key, primary_key)[0]
+        (multipage_range, page_range, record_index) = self.table.rid_base(base_rid)
+        

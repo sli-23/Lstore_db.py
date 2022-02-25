@@ -117,14 +117,34 @@ class Query:
         base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index) #bytes
         base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
 
-        #insert tail record
+        new_tail_rid = int.from_bytes(('r' + str(self.table.num_updates)).encode(),byteorder = 'big')
 
+        schema_encoding = self.table.schema_encoding(columns)
+        if base_indirection_int != MAXINT: #already updated
+            tail_indrection = base_indirection_int
+            #update schema_encoding
+        else:
+            #new update
+            schema_encoding = self.table.schema_encoding(columns)
+            tail_indrection = MAXINT
+
+        #insert tail record
+        curr_time = int(time())
+        schema_encoding = int.from_bytes(("".join(schema_encoding)).encode(), byteorder='big')
+        meta_data = [tail_indrection, new_tail_rid, curr_time, schema_encoding]
+        meta_data.extend(columns)
+        self.table.tail_write(meta_data)
+        
         #update index
         for col, value in enumerate(columns):
             if value == None:
                 continue
             else:
                 self.table.index.update_index(primary_key, col, value)
+        
+        #overwrite base_indirection + schema_encoding
+        self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].update(record_index, new_tail_rid)
+        self.table.page_directory['base'][SCHEMA_ENCODING_COLUMN][multipage_range].pages[page_range].update(record_index, schema_encoding)
 
 
     """

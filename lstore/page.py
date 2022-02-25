@@ -33,7 +33,7 @@ class Page:
         self.pinned = 0
         return data
 
-    def updata(self, index, value):
+    def update(self, index, value):
         """
         Update byte data by index to value(Convert to byte)
         :param index: int
@@ -41,10 +41,8 @@ class Page:
         :return: None
         """
         self.dirty = True
-        self.pinned = 1
         self.data[index*8:(index+1)*8] = value.to_bytes(8, byteorder='big')
-        self.pinned = 0
-
+        
     def get_data_num(self):
         return self.num_records
 

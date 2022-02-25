@@ -22,14 +22,14 @@ class Database():
             if not os.path.exists(path):
                 os.makedirs(path)
             self.bufferpool.initial_path(path)
-            tabledata_file = open(path + '/Tables.pkg', 'wb')
+            tabledata_file = open(path + '/Tables', 'wb')
             tabledata_file.close()
-            key_file = open(path + '/Primary_Key.pkg', 'wb')
+            key_file = open(path + '/Primary_Key', 'wb')
             key_file.close()
         except:
-            tabledata_file = open(path + '/Tables.pkg', 'rb')
+            tabledata_file = open(path + '/Tables', 'rb')
             tabledata_file.close()
-            key_file = open(path + '/Primary_Key.pkg', 'rb')
+            key_file = open(path + '/Primary_Key', 'rb')
             key_file.close()
 
     def keydict(self, table_name, table):
@@ -42,13 +42,15 @@ class Database():
             #table.close() #it will trigger merger and evict all
             self.keydict(name, table)
         
-        key_file = open(self.path + '/Primary_Key.pkg', 'wb')
+        key_file = open(self.path + '/Primary_Key', 'wb')
         pickle.dump(self.primary_key, key_file)
         key_file.close()
-
-        tabledata_file = open(self.path + '/Tables.pkg', 'wb')
-        pickle.dump(self.tables, tabledata_file)
-        tabledata_file.close()
+        
+        for key in self.tables.keys():
+            table = self.tables[key]
+            tabledata_file = open(self.path + '/' + key + '.table', 'wb')
+            pickle.dump(table, tabledata_file)
+            tabledata_file.close()
 
     """
     # Creates a new table
@@ -69,7 +71,6 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
-        
         if name not in self.tables.keys():      # Check whether table named "name" in tables, if not, print alert info,else delete the table.
             print(f'table {name} not exists.')
             return
@@ -79,6 +80,19 @@ class Database():
     # Returns table with the passed name
     """
     def get_table(self, name):
+        path = self.path
+        for filename in os.listdir(path):
+            if filename[:-6] == name:
+                path = path + '/' + filename
+                fr = open(path, 'rb')
+                data = pickle.load(fr)
+                fr.close()
+                return data
+            else:
+                print(f'table {name} not exists.')
+                    
+        """
         if name in self.tables.keys():  # Check whether table named "name" in tables, if not, print alert info,else return the Table object.
             return self.tables[name]
         print(f'table {name} not exists.')
+        """

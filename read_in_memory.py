@@ -1,4 +1,4 @@
-from lstore.BPlusTree import *
+from lstore.bplustree import *
 from random import choice, randint, sample, seed
 from lstore.query_bplustree import Query
 from lstore.db import Database
