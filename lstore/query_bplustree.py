@@ -1,9 +1,4 @@
-from email.mime import base
-from pickle import FALSE
-from types import NoneType
-from webbrowser import MacOSX
-
-from numpy import column_stack
+import pickle
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.config import *

@@ -5,9 +5,7 @@ Key column should be indexed by default, other columns can be indexed through th
 Indices are usually B-Trees, but other data structures can be used as well.
 """
 
-from xxlimited import new
-from pyparsing import col
-from lstore.BPlusTree import * 
+from lstore.bplustree import BPlusTree
 from lstore.config import *
 
 class Index:

@@ -1,5 +1,4 @@
 import os
-from tkinter import Frame
 from typing_extensions import Self
 from lstore.config import *
 from collections import OrderedDict

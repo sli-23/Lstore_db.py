@@ -1,8 +1,6 @@
 import pickle
 from datetime import datetime
 import os
-from tkinter import Frame
-from typing_extensions import Self
 from lstore.config import *
 from collections import OrderedDict
 from lstore.page import Page

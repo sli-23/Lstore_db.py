@@ -3,10 +3,9 @@ from lstore.bufferpool import *
 from lstore.index import Index
 from lstore.config import *
 import time
-import pickle #only can be used in meta data
+import pickle
 import os
 import sys
-from collections import deque
 
 class Database():
 
@@ -70,6 +69,7 @@ class Database():
     # Deletes the specified table
     """
     def drop_table(self, name):
+        
         if name not in self.tables.keys():      # Check whether table named "name" in tables, if not, print alert info,else delete the table.
             print(f'table {name} not exists.')
             return

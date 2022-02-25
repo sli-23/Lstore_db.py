@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import floor
-from pickle import NONE
+import pickle
 from random import randint
 
 

@@ -4,7 +4,7 @@ from lstore.db import Database
 from lstore.query_bplustree import Query
 from lstore.config import *
 from lstore.BPlusTree import BPlusTree
-from lstore.index_bplustree import Index
+from lstore.index import Index
 from random import choice, randint, sample, seed
 
 db = Database()
