@@ -1,7 +1,3 @@
-from email.mime import base
-import enum
-
-from numpy import delete
 from lstore.bufferpool import BufferPool
 from lstore.index import Index
 from lstore.config import *
