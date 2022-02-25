@@ -6,6 +6,7 @@ import time
 import pickle #only can be used in meta data
 import os
 import sys
+from collections import deque
 
 class Database():
 
@@ -22,14 +23,14 @@ class Database():
             if not os.path.exists(path):
                 os.makedirs(path)
             self.bufferpool.initial_path(path)
-            tabledata_file = open(path + '/Tables', 'wb')
+            tabledata_file = open(path + '/Tables.pkg', 'wb')
             tabledata_file.close()
-            key_file = open(path + '/Primary_Key', 'wb')
+            key_file = open(path + '/Primary_Key.pkg', 'wb')
             key_file.close()
         except:
-            tabledata_file = open(path + '/Tables', 'rb')
+            tabledata_file = open(path + '/Tables.pkg', 'rb')
             tabledata_file.close()
-            key_file = open(path + '/Primary_Key', 'rb')
+            key_file = open(path + '/Primary_Key.pkg', 'rb')
             key_file.close()
 
     def keydict(self, table_name, table):
@@ -42,11 +43,11 @@ class Database():
             #table.close() #it will trigger merger and evict all
             self.keydict(name, table)
         
-        key_file = open(self.path + '/Primary_Key', 'wb')
+        key_file = open(self.path + '/Primary_Key.pkg', 'wb')
         pickle.dump(self.primary_key, key_file)
         key_file.close()
 
-        tabledata_file = open(self.path + '/Tables', 'wb')
+        tabledata_file = open(self.path + '/Tables.pkg', 'wb')
         pickle.dump(self.tables, tabledata_file)
         tabledata_file.close()
 

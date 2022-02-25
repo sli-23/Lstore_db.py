@@ -19,7 +19,7 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 2
+number_of_records = 100
 number_of_aggregates = 100
 seed(3562901)
 
@@ -49,6 +49,7 @@ for key in records:
     else:
         pass
         # print('select on', key, ':', record)
+
 
 for key in records:
     updated_columns = [None, None, None, None, None]
@@ -87,3 +88,4 @@ for c in range(0, grades_table.num_columns):
             pass
             # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 
+#sum error on [ 92106435 , 92106440 ]:  60 , correct:  85

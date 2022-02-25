@@ -1,4 +1,5 @@
 from email.mime import base
+import enum
 
 from numpy import delete
 from lstore.bufferpool import Bufferpool
@@ -7,6 +8,7 @@ from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
 import threading
+from collections import deque
 
 class Record:
 
@@ -35,9 +37,12 @@ class Table:
         self.key_lst = []
 
         self.bufferpool = Bufferpool()
-        #self.lock = threading.Lock()
-        self.close = False #to trigger merge
-        
+
+        """
+        Each base page has a merge queue
+        merge queue is a deque 
+        with element (BaseRid, TailRid) for every update
+        """
         self.__init_page_directory()
 
     def __init_page_directory(self):
@@ -46,29 +51,22 @@ class Table:
         :return:
 
         page directory should map RID to page range, page....
-
         """
-
         self.page_directory = {'base':[],'tail':[]}
         for i in range(self.num_columns + DEFAULT_COLUMN):
             self.page_directory['base']=[[MultiPage()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
             self.page_directory['tail'] = [[Page()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
 
     
-    def merge(self, primary_key):
-        print("merge is happening")
-
+    def merge(self):
+        print("Starting merging")
         #Get Base RID, base indirection
         base_rid = self.index.locate(self.table.key, )[0]
         multipage_range, page_range, record_index = self.rid_base(base_rid)
         base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index)
         base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
+     
 
-        #check if there is update
-        if base_indirection_int != MAXINT:
-            pass
-        else: #there is no updates (tail page)
-            return
 
     def get_tail_indirection(self, indirection, column, page_index):
         indirection_int = int(str(indirection.decode()).split('\x00')[-1])    # Covert byte to int

@@ -1,101 +1,114 @@
+from copyreg import pickle
+from datetime import datetime
 import os
+from tkinter import Frame
+from typing_extensions import Self
 from lstore.config import *
 from collections import OrderedDict
 from lstore.page import Page
 import threading
+import copy
 import time
-
-"""
-BufferPool:
-- LRU replacer
-- Disk Manager
-- Page: lstore.page - dirty/pinned
-- Frame 
-"""
-
-"""
-Update value:
-1. pinnedcount += 1
-2. update page
-3. dirty = True
-4. pinnedcount -= 1
-
-Write value:
-1. pinnedcount += 1
-2. write page
-3. dirty = True
-4, pinnedcount -= 1
-
-get value (with index):
-1. pinnedcount += 1
-2. get()
-3. pinnedcount -= 1
-
-1. LRU Replacement Policy
-    LRU,即最近最久未被使用的页面会被置换出去
-    LRU负责追踪Page_数组中,最久未被使用的元素的index(即frame_id)
-
-victim(frame id): 将最近最久未被使用的对象移除,将它的内容存到输入参数 中并返回true,如果Replacer为空,则返回false
-pin(frame id): 此方法应该在一个Page被固定到BufferPoolManager的frame后调用,它应该从LRUReplacer中删除该frame
-unpin(frame id): 这个方法当一个page的pin_count变成0的时候被调用,这个方法会添加frame,该frame会包含未被固定的page
-size(): 这个方法会返回当前LRUReplacer中的frame的数量
-
-
-2. Buffer Pool Manager Instance
-BPMI(Buffer Pool Manager Instance)负责从DiskManager拿数据库的page,并将他们存在内存。它也负责将dirty page 放回磁盘,或者当内存不足时,交换内存Page回磁盘。
-BPMI会复用Page对象。意味着,同一个Page对象在系统运行期间,可能包含不同的物理页面。Page对象的标识page_id会标识当前Page对象包含的是哪一个物理页面。
-如果一个Page对象不包含任何物理页面,则它的page_id必须被设置成INVALID_PAGE_ID。
-
-每一个Page对象会维持一个计数器,表示当前有多少个线程已经“pinned”该Page。BPMI不会释放掉一个被“Pinned”的Page。每个Page对象同时会实时记录自己是否是dirty。
-你的程序要记录一个page在它被"unpinned"前,是否被修改了。BPMI要在Page对象重新被使用之前,将dirty Page写回磁盘。
-
-对于FetchPgImp,如果空闲列表中没有可用的Page,且其他所有的Page都处于”pinned“状态,你需要返回NULL。
-
-对于FlushPgImp,无论Page处于什么状态（“pinned” 或 “unpinned”）,都会被刷新到磁盘。
-
-对于UnpinPgImp,is_dirty参数会告知Page有没有被修改。
-
-注意：Pin和Unpin在LRUReplacer和BufferPoolManagerInstance有不同的含义。在LRUReplacer中，pin一个Page意味着我们不应该将该Page调出去，因为该Page在被使用，所以要将该Page移出LRU的list。在BufferPoolManagerInstance中，pin一个Page，意味着我们想要使用这个Page，这个Page不应该被移出Buffer Pool。
-
-
-3. Parallel BUffer Pool Manager
-"""
-
-class Bufferpool_Frame:
-
-    def __init__(self, table_name, page_number, page):
-        self.page_number = page_number
-        self.table = table_name
-        self.dirtybit = False
-        self.pincount = 0
-        self.currentpage = page
-        self.reference_counter = 0 #each page has a reference bit; when a page is accessed, set to 1
-        pass
-
-class DiskManager:
-
-    def __init__(self) -> None:
-        pass
+import sys
 
 class Bufferpool:
     
-    def __int__(self, capacity):
+    def __int__(self, capacity=BUFFERPOOL_SIZE):
         self.path = ""
         self.capacity = capacity
-        #self.bufferpool = OrderedDict() #key = tablename; val = bufferframe
-        self.bufferpool = OrderedDict() #(,frame)
-        
-        self.bufferpool_lock = threading.Lock()
-
-    def __len__(self):
-        return self.pages
+        self.page_num = 0
+        self.lru_cache = OrderedDict() #key: bufferid = (table_name, column_id, multipage_id, page_range_id, page_id) value: Page()
+        self.page_bufferpool = {}
+        self.least_used = {}
+        self.tail = {}
 
     def initial_path(self, path):
         self.path = path
-    
-    def evict(self):
-        pass
 
+    def check_capacity(self):
+        return len(self.page_bufferpool) >= self.capacity
+
+    def check_page_in_buffer(self, page_id):
+        return self.page_bufferpool[page_id]
+
+    def buffer_to_path(self, table_name, column_id, multipage_id, page_range_id, page_id):
+        path = os.path.join(self.path, table_name, str(column_id), str(multipage_id), str(page_range_id), str(page_id) + 'pkg')
+        return path
+
+    def read_page(self, page, path):
+        f = open(path, 'rb')
+        page == pickle.load(f)
+        buffer_page = Page()
+        buffer_page.num_records = page.num_records
+        buffer_page.data = page.data
+        f.close
+        return buffer_page
+
+
+    def write_page(self, page, path):
+        dirname = os.path.dirname(path)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        f = open(path, 'wb')
+        pickle.dump(page, f)
+        f.close()
+
+    def add_page(self, buffer_id, default = True):
+        if default:
+            self.page_bufferpool[buffer_id] = None
+        else:
+            self.page_bufferpool[buffer_id] = Page()
+            self.page_bufferpool[buffer_id].dirty = True
+
+    def remove_page(self):
+        sotred_bufferid = sorted(self.least_used, key = self.least_used.get)
+        oldest_budder_id = sotred_bufferid[0] #page
+
+        int = 0
+        if self.page_bufferpool[oldest_budder_id].pinned != 0:
+            int += 1
+            oldest_budder_id = sotred_bufferid[int]
+
+        oldest_page = self.page_bufferpool[oldest_budder_id]
+        if oldest_page.dirty == 1:
+            old_page_path = self.buffer_to_path
+            self.write_page(oldest_page, old_page_path)
+        
+        self.page_bufferpool[oldest_budder_id] = None
+        del self.least_used[oldest_budder_id]
+
+
+    def get_page(self, table_name, column_id, multipage_id, page_range_id, page_id):
+        buffer_id = (table_name, column_id, multipage_id, page_range_id, page_id)
+        path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, page_id)
+
+        #if not file
+        if not os.path.isfile(path):
+            if self.check_capacity(): #if it is full
+                self.remove_page()
+            self.add_page(buffer_id, default= False)
+            dirname = os.path.dirname(path)
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            f = open(path, 'w+')
+            f.close()
+        else:
+            #has existed page
+            if not self.check_page_in_buffer:
+                if self.check_capacity(): #if it is full
+                    self.remove_page()
+                self.page_bufferpool[buffer_id] = self.read_page(path)
+        
+        self.least_used[buffer_id] = time()
+        
+        return self.page_bufferpool[buffer_id]
+
+    def get_record(self, table_name, column_id, multipage_id, page_range_id, page_id, record_id):
+        page = self.get_page(table_name, column_id, multipage_id, page_range_id, page_id)      
+        record_data = page.get(record_id)
+        return record_data  
+
+        
 
     
 
