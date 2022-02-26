@@ -2,6 +2,7 @@ import pickle
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.config import *
+from lstore.bufferpool import BufferPool
 from time import time
 
 
@@ -27,7 +28,6 @@ class Query:
     def delete(self, primary_key):
         tree = self.table.index.indices[self.table.key]
         tree.delete(primary_key)
-            
     
     """
     # Insert a record with specified columns
@@ -36,12 +36,12 @@ class Query:
     """
 
     def insert(self, *columns):
-        indirection = MAXINT
         self.table.num_records += 1
-        rid = self.table.num_records #num of records
         
+        # Meta data
+        indirection = MAXINT
+        rid = self.table.num_records #num of records
         curr_time = int(time()) 
-
         schema_encoding = '0' * self.table.num_columns
         schema_encoding = int.from_bytes(schema_encoding.encode(), byteorder='big') #int
 
@@ -50,9 +50,9 @@ class Query:
         default_column.extend(column)
         self.table.base_write(default_column)
             
-        self.table.key_lst.append(columns[self.table.key]) # Using in sum
+        self.table.key_lst.append(columns[self.table.key]) #Using in import Primary_key
 
-        #index
+        #Update Index
         for i, val in enumerate(column):
             if i == self.table.key : #in the first column, key = primary key, value = rid
                 self.table.index.create_index(i, val, rid)
@@ -77,10 +77,25 @@ class Query:
         if len(query_columns) != self.table.num_columns:
             return records
 
-        # Index
+        # Getting metadata from bufferpool
+        """
+        Example:
+            primary key is: 92106429
+            grades_table.bufferpool.get_record('Grades', 4, 0, 0, 0, 'Base_Page')
+                - The result will be in bytearray(b'\x00\x00\x00\x00\x05}n\xbd')
+            Check:
+                - int.from_bytes(b'\x00\x00\x00\x00\x05}n\xbd', byteorder='big')
+                    - The result is 92106429
+        """
+
+        # index_value will be always a key 
+        # Using key to map the rid => page_indirection (multipage_id, page_range_id, record_index)
         rid = self.table.index.locate(self.table.key, index_value)[0]
-        
-        # TODO: update after finishing bufferpool
+        multipage_id, page_range_id, record_id = self.table.rid_base(rid)
+        base_indirection = self.table.bufferpool.get_record(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
+        base_schema_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
+        # TODO: using schema_encoding to clarify update - use base_indirection to clarify which tail page has updates
+
         # base record
         record.append(index_value)
         for col in range(self.table.num_columns):
@@ -117,7 +132,7 @@ class Query:
         base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index) #bytes
         base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
 
-        new_tail_rid = int.from_bytes(('r' + str(self.table.num_updates)).encode(),byteorder = 'big')
+        new_tail_rid = self.table.num_updates
 
         schema_encoding = self.table.schema_encoding(columns)
         if base_indirection_int != MAXINT: #already updated
@@ -126,7 +141,7 @@ class Query:
         else:
             #new update
             schema_encoding = self.table.schema_encoding(columns)
-            tail_indrection = MAXINT
+            tail_indrection = int.from_bytes(('r' + str(self.table.num_updates)).encode(),byteorder = 'big')
 
         #insert tail record
         curr_time = int(time())

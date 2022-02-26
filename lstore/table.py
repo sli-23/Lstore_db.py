@@ -64,7 +64,6 @@ class Table:
         base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
      
 
-
     def get_tail_indirection(self, indirection, column, page_index):
         indirection_int = int(str(indirection.decode()).split('\x00')[-1])    # Covert byte to int
         return int.from_bytes(self.page_directory["Tail"][column + DEFAULT_COLUMN][page_index][indirection_int // DEFAULT_COLUMN].get(indirection_int % RECORDS_PER_PAGE), byteorder='big')
@@ -78,22 +77,37 @@ class Table:
 
     def base_write(self, data):
         for i, value in enumerate(data):
+            #calculate rid to get multipage, page_range, index
+            #rid = number of records
+            multipage_id, page_range_id, page_id = self.rid_base(self.num_records)
+            
             multiPages = self.page_directory["base"][i][-1]
             page = multiPages.get_current()
-            if not multiPages.last_page():
-                if not page.has_capacity():
+            page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
+            
+            if not multiPages.last_page(): #not the last pag
+                if not page.has_capacity(): #page is full 
                     self.page_directory['base'][i][-1].add_page_index()
+                    page_range_id += 1
                     page = multiPages.get_current()
+                    print(self.name, i, multipage_id, page_range_id)
+                    page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             else:
                 if not page.has_capacity():
                     self.page_directory['base'][i].append(MultiPage())
-                    #self.page_directory['tail'][i].append([Page()])
+                    multipage_id += 1
+                    page_range_id = 0
                     page = self.page_directory['base'][i][-1].get_current()
+                    page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
+            
+            page.dirty = True
             page.write(value)
 
 
     def tail_write(self, data):
         for col, val in enumerate(data):
+            page_id, record_index = self.rid_tail(self.num_updates)
+            page = self.bufferpool.get_page(self.name, col, page_id, page_id, 'Tail_Page')
             if val == None:
                 continue
             else:
@@ -101,6 +115,10 @@ class Table:
                 if not tail_page.has_capacity():
                     self.page_directory['tail'][col].append(Page())
                     tail_page = self.page_directory['tail'][col][-1]
+                    page_id += 1
+                    page = self.bufferpool.get_page(self.name, col, page_id, page_id, 'Tail_Page')
+                
+                tail_page.dirty = True
                 tail_page.write(val)
 
     def rid_base(self, rid):
@@ -131,6 +149,23 @@ class Table:
             record_index = 0
 
         return int(record_multipage), int(record_page_range), int(record_index)
+
+    def rid_tail(self, rid):
+        page_range = 0
+        record_index = 0
+
+        if rid // RECORDS_PER_PAGE != 1:
+            page_range = rid // RECORDS_PER_PAGE
+        else:
+            page_range = rid // RECORDS_PER_PAGE - 1 #if update = 512 => is full but still in page_range 1
+        
+        rid = rid - RECORDS_PER_PAGE * page_range
+
+        record_index = rid - 1
+        if record_index < 0:
+            record_index = 0
+
+        return int(page_range), int(record_index)
 
     def get_schema_encoding(self, indirection):
         #convert into string

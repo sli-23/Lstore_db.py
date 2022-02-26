@@ -81,15 +81,17 @@ class Database():
     """
     def get_table(self, name):
         path = self.path
+        data = None
         for filename in os.listdir(path):
             if filename[:-6] == name:
                 path = path + '/' + filename
                 fr = open(path, 'rb')
                 data = pickle.load(fr)
                 fr.close()
-                return data
-            else:
-                print(f'table {name} not exists.')
+        if data == None:
+            print(f'table {name} not exists.')
+        else:
+            return data
                     
         """
         if name in self.tables.keys():  # Check whether table named "name" in tables, if not, print alert info,else return the Table object.

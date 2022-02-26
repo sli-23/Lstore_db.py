@@ -47,5 +47,8 @@ bp.write_page(column, path)
 bufferid = ('Grades', 1, 0, 0, 0)
 #buffer id: table_name, column_id, multipage_id, page_range_id, page_id
 bp.add_page(bufferid, default=False)
-print(bp.page_bufferpool)
+print(bp.lru_cache)
+bp.get_page('Grades', 1, 0, 0, 0)
+print(bp.lru_cache)
+
 db.close()
