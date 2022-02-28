@@ -42,9 +42,7 @@ class Query:
         indirection = MAXINT
         rid = self.table.num_records #num of records
         curr_time = int(time()) 
-        schema_encoding = '0' * self.table.num_columns
-        schema_encoding = int.from_bytes(schema_encoding.encode(), byteorder='big') #int
-
+        schema_encoding = 0
         default_column = [indirection, rid, curr_time, schema_encoding]
         column = list(columns)
         default_column.extend(column)
@@ -109,9 +107,10 @@ class Query:
         for col, val in enumerate(query_columns):
             if val == 0:
                 record[col] = None
-            else:
+            else: #check schema -> get tail_page from bufferpool
                 continue
-        
+
+
         return [Record(rid, index_value, record)]
 
 

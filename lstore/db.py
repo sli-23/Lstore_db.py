@@ -42,15 +42,21 @@ class Database():
             #table.close() #it will trigger merger and evict all
             self.keydict(name, table)
         
-        key_file = open(self.path + '/Primary_Key', 'wb')
-        pickle.dump(self.primary_key, key_file)
-        key_file.close()
+        for key in self.primary_key.keys():
+            primary_k = self.primary_key[key]
+            key_file = open(self.path + '/' + key + '.table_key', 'wb')
+            pickle.dump(primary_k, key_file)
+            key_file.close()
         
         for key in self.tables.keys():
             table = self.tables[key]
             tabledata_file = open(self.path + '/' + key + '.table', 'wb')
             pickle.dump(table, tabledata_file)
             tabledata_file.close()
+
+        os.remove(self.path + '/' + 'Tables')
+        os.remove(self.path + '/' + 'Primary_Key')
+
 
     """
     # Creates a new table

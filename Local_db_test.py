@@ -3,10 +3,9 @@ import os
 import lstore 
 
 cwd = os.getcwd()
-fr = open(cwd + '/Grades.table', 'rb')
-data = pickle.load(fr)
+print(cwd)
+fr = open(cwd + '/000.pkl', 'rb')
 
-table = data
 fr.close()
 
-print(table.num_records)
+#check primary key

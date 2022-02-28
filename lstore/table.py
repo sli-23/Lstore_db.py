@@ -76,21 +76,22 @@ class Table:
         return columns
 
     def base_write(self, data):
+        self.num_records += 1
         for i, value in enumerate(data):
             #calculate rid to get multipage, page_range, index
             #rid = number of records
-            multipage_id, page_range_id, page_id = self.rid_base(self.num_records)
-            
+            multipage_id, page_range_id, record_id = self.rid_base(self.num_records)
             multiPages = self.page_directory["base"][i][-1]
             page = multiPages.get_current()
+            #write the page in bufferpool
             page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             
+
             if not multiPages.last_page(): #not the last pag
                 if not page.has_capacity(): #page is full 
                     self.page_directory['base'][i][-1].add_page_index()
                     page_range_id += 1
                     page = multiPages.get_current()
-                    print(self.name, i, multipage_id, page_range_id)
                     page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             else:
                 if not page.has_capacity():
@@ -99,9 +100,9 @@ class Table:
                     page_range_id = 0
                     page = self.page_directory['base'][i][-1].get_current()
                     page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
-            
-            page.dirty = True
+
             page.write(value)
+            page.dirty = True
 
 
     def tail_write(self, data):
@@ -195,8 +196,9 @@ class Table:
 
         return schema_encoding
 
-    def merge(self, primary_key):
-        #get rid
-        base_rid =  self.index.locate(self.table.key, primary_key)[0]
-        (multipage_range, page_range, record_index) = self.table.rid_base(base_rid)
+    def schema_update(self, old_schema, query_column):
+        return old_schema | (1<<query_column)
+
+    def schema_update_check(self, schema, query_column):
+        return (schema & (1<<query_column))>>query_column == 1 #false -> no update
         

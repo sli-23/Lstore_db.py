@@ -14,7 +14,7 @@ class BufferPool:
     def __init__(self, capacity=BUFFERPOOL_SIZE):
         self.path = ""
         self.capacity = capacity
-        self.lru_cache = OrderedDict() #Key: buffer_id = (table_name, column_id, multipage_id, page_range_id, page_id) Value: Page()
+        self.lru_cache = OrderedDict()
 
     def initial_path(self, path):
         self.path = path
@@ -77,20 +77,22 @@ class BufferPool:
         
         buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, base_or_tail)
-
+        path = path + '.pkl'
         #new page
-        if not os.path.isfile(path):
+        if not os.path.isfile(path): #if in this path there is no such file
             if self.check_capacity():
                 self.remove_page()
             self.add_page(buffer_id, default= False)
             
+            #make a dir; just a file without any data init
             dirname = os.path.dirname(path)
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
-            f = open(path, 'w+')
+            f = open(path, 'wb')
             f.close()
-        else:
-            # page in disk
+    
+        else: 
+            # page in already in disk
             if not self.check_page_in_buffer:
                 if self.check_capacity(): #if it is full, then remove
                     self.remove_page()
