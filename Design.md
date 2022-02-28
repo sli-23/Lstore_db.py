@@ -44,7 +44,7 @@ Suppose we inserted a key `[92106430, 1, 14, 1, 19]` in our `Grades` table (5 co
 
 * By using the loop, each value in that record will be inserted one by one:
 
-![](images/2022-02-28-02-56-56.png)
+![](images/2022-02-28-05-41-38.png)
 
 * In the `page.write(value)`, we convert value in to bytes for storing in the disk.
   * Example: insert `[92106430, 1, 14, 1, 19]`. To check if it successfully converted values into bytes:
