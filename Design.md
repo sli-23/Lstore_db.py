@@ -34,7 +34,9 @@ db.close()
 ## Query - `query.insert(*columns)`
 
 <center>
-<img src="images/2022-02-28-02-20-02.png" width="450"/></center>
+<img src="images/2022-02-28-02-20-02.png" width="600"/>
+
+</center>
 
 ### Base_write
 
