@@ -12,6 +12,9 @@
     - [Read from BufferPool](#read-from-bufferpool)
     - [Read from Index](#read-from-index)
   - [Query - `query.sum(self, start_range, end_range, aggregate_column_index)`](#query---querysumself-start_range-end_range-aggregate_column_index)
+  - [BufferPool](#bufferpool)
+  - [Merge](#merge)
+  - [Quecc](#quecc)
 
 ## First Layer - `db.py`
 
@@ -29,7 +32,7 @@ db.close()
 <img src="images/2022-02-28-01-52-13.png" width="300"/></center>
 
 * `Grades.table`: the `Table()` object in serialization
-* `Grades.table_key`: a list contained primary keys from that able in serialization
+* `Grades.table_key`: a list contained primary keys from that table in serialization
 
 ## Query - `query.insert(*columns)`
 
@@ -68,7 +71,7 @@ bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x13')
 19
 ```
 
-* `bufferpool.get_page()`: this make page file in the disk (more details in the later section). This allow we can read data from disk (before closing the BufferPool, it will not have any data in the file but only a filename).
+* `bufferpool.get_page()`: this make page file in the disk (more details in the later section). This allow reading data from disk (before closing the BufferPool, it will not have any data in the file but only a filename).
 
 **Suppose we are only inserting the data:**
 * The size of BufferPool is `1000`, the basic unit it `Page()`. When inserting values, we will insert a column or a `Page()` as a basic unit in the BufferPool.
@@ -183,3 +186,9 @@ def sum(self, start_range, end_range, aggregate_column_index):
         
         return sum
 ```
+
+## BufferPool
+
+## Merge
+
+## Quecc
