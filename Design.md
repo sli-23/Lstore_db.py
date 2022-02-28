@@ -34,7 +34,7 @@ db.close()
 ## Query - `query.insert(*columns)`
 
 <center>
-<img src="images/2022-02-28-02-20-02.png" width="600"/>
+<img src="images/2022-02-28-05-40-31.png" width="600"/>
 
 </center>
 
