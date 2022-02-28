@@ -1,8 +1,5 @@
-# L-Store Illustration
-
-# Contents 
+# L-Store Illustration 
 - [L-Store Illustration](#l-store-illustration)
-- [Contents](#contents)
   - [First Layer - `db.py`](#first-layer---dbpy)
     - [Example](#example)
   - [Query - `query.insert(*columns)`](#query---queryinsertcolumns)
