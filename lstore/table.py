@@ -53,16 +53,58 @@ class Table:
         for i in range(self.num_columns + DEFAULT_COLUMN):
             self.page_directory['base']=[[MultiPage()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
             self.page_directory['tail'] = [[Page()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
-
+            
+    # merge function        
+    # https://www.researchgate.net/publication/324150481_L-Store_A_Real-time_OLTP_and_OLAP_System
+    # check page 6 for details
     
-    def merge(self):
+    # input: queue of unmerged tailpages
+    def merge(self, mergeQ):
         print("Starting merging")
-        #Get Base RID, base indirection
+        # Get Base RID, base indirection
+        while true:
+            # step 1
+            # wait until all concurrent merge is empty
+            if not (self.mergeQ.empty()):
+                # step 2
+                # batchTailPage c mergeQ.dequeue()
+                # batchConsPage ← batchTailPage.getBasePageCopy()
+                # decompress(batchConsPage)
+                # HashMap seenUpdatesH
+                pass
+            # step 3
+            i = 0
+            for i < batchTailPage.size:
+                # tailPage ← batchTailPages[i]
+                i = i + 1
+                j = k - 1
+                for  j >= tailPage.size:
+                    # record[j] = jth record in tailPage
+                    # RID = record[j].RID
+                    j = j - 1
+                    if seenUpdatesH does not contain RID:
+                        seenUpdatesH.add(RID)
+                        // copy the latest version of record into consolidated pages
+                        batchConsPage.update(RID, record[j])
+                    if all RIDs OR all tail pages are seen:
+                        compress(batchConsPage)
+                        persist(batchConsPage)
+                        stop examining remaining tail pages
+            # step 4
+            batchBasePage c batchTailPage.getBasePageRef() 
+            PageDirect.swap(batchBasePage, batchConsPage)
+            # step 5
+            deallocateQ.enqueue(batchBasePage)
+            
+        # return:  queue of outdated and consolidated base pages to be deallocated
+        
+        # origin code down here:
+        '''
         base_rid = self.index.locate(self.table.key, )[0]
         multipage_range, page_range, record_index = self.rid_base(base_rid)
         base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index)
         base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
-     
+        '''
 
     def get_tail_indirection(self, indirection, column, page_index):
         indirection_int = int(str(indirection.decode()).split('\x00')[-1])    # Covert byte to int
