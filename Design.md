@@ -46,8 +46,8 @@ db.close()
 Suppose we inserted a key `[92106430, 1, 14, 1, 19]` in our `Grades` table (5 columns; the first column is the primary key column):
 
 * By using the loop, each value in that record will be inserted one by one:
+![](images/2022-02-28-17-36-16.png)
 
-![](images/2022-02-28-05-41-38.png)
 
 * In the `page.write(value)`, we convert value in to bytes for storing in the disk.
   * Example: insert `[92106430, 1, 14, 1, 19]`. To check if it successfully converted values into bytes:
@@ -71,7 +71,7 @@ bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x13')
 19
 ```
 
-* `bufferpool.get_page()`: this make page file in the disk (more details in the later section). This allow reading data from disk (before closing the BufferPool, it will not have any data in the file but only a filename).
+* `bufferpool.get_page()`: this function makes page file in the disk (more details in the later section). It also allows reading data from disk (before closing the BufferPool, it will not have any data in the file but only a filename).
 
 **Suppose we are only inserting the data:**
 * The size of BufferPool is `1000`, the basic unit it `Page()`. When inserting values, we will insert a column or a `Page()` as a basic unit in the BufferPool.
@@ -117,7 +117,7 @@ for i, val in enumerate(column):
 ### Tail_write
 
 ### Update Index
-![](images/2022-02-28-04-49-06.png)
+![](images/2022-02-28-17-37-16.png)
 
 ```python
 for col, value in enumerate(columns):
