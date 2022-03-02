@@ -77,14 +77,14 @@ class Table:
             for i < batchTailPage.size:
                 # tailPage ← batchTailPages[i]
                 i = i + 1
-                j = k - 1
+                j = k - 1 # what is k?
                 for  j >= tailPage.size:
                     # record[j] = jth record in tailPage
                     # RID = record[j].RID
                     j = j - 1
                     if seenUpdatesH does not contain RID:
                         seenUpdatesH.add(RID)
-                        // copy the latest version of record into consolidated pages
+                        # copy the latest version of record into consolidated pages
                         batchConsPage.update(RID, record[j])
                     if all RIDs OR all tail pages are seen:
                         compress(batchConsPage)
