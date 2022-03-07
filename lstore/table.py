@@ -36,21 +36,22 @@ class Table:
         self.key_lst = []
 
         self.bufferpool = BufferPool()
-        #self.mergeQ = deque()
-        self.merge_queue_matrix = []
+        self.mergeQ = deque()
+        #self.merge_queue_matrix = []
 
         self.closed = False
-        #self.merge_trigger = threading.Event()
-        #self.merge_thread = threading.Thread(name='merge', target=self.merge)
 
-        
         """
         Each base page has a merge queue
         merge queue is a deque 
         with element (BaseRid, TailRid) for every update
         """
         self.__init_page_directory()
-
+    
+    def __setstate__(self):
+        self.merge_trigger = threading.Event()
+        self.merge_thread = threading.Thread(name='merge', target=self.merge)
+    
     def __init_page_directory(self):
         """
         Give a default page/multipage obj to page_directory
@@ -72,7 +73,7 @@ class Table:
 
     def set_table_closed(self):
         self.table_closed = True
-        #self.merge_trigger.set()
+        self.merge_trigger.set()
         return
 
     def get_merge_range_base(self, tail_merge_range):
@@ -88,18 +89,18 @@ class Table:
     # merge function        
     # https://www.researchgate.net/publication/324150481_L-Store_A_Real-time_OLTP_and_OLAP_System
     # check page 6 for details
-    def merge_trigger(self):
+
+    def mergetrigger(self):
         if self.num_updates % MERGE_TRIGGER == 0:
-            pass
-            #self.merge_trigger.set()
-            #self.merge_thread.start()
+            self.merge_trigger.set()
+            self.merge_thread.start()
             #self.merge_thread.join()
             
     def merge(self):
         print("Start merging")
         while not self.closed: #if the table is not closed
             # step0: wait until all concurrent merge is empty
-            #self.merge_trigger.wait()
+            self.merge_trigger.wait()
             multipage_id, merge_range = self.get_merge_range()
             merge_range = merge_range + 1
             
@@ -122,7 +123,7 @@ class Table:
 
                     for base_rid, tail_rid in seen_update.items():
                         pass
-            #self.merge_trigger.clear()
+            self.merge_trigger.clear()
         return
 
     def base_write(self, data):

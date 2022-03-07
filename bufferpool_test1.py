@@ -99,8 +99,6 @@ for key in records:
             pass
 
 
-
-
 """
 for i in range(3*number_of_records):
     print(tail_record(i))

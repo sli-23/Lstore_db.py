@@ -206,7 +206,7 @@ class Query:
                 self.table.index.update_index(primary_key, col, value)
         
         #check merge
-        self.table.merge_trigger()
+        self.table.mergetrigger()
 
     """
     :param start_range: int         # Start of the key range to aggregate 
