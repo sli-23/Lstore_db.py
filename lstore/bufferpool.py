@@ -1,10 +1,11 @@
+from functools import lru_cache
 import pickle
 from datetime import datetime
 import os
 from lstore.config import *
 from collections import OrderedDict
 from lstore.page import Page
-import threading
+from threading import Lock
 import copy
 import time
 import sys
@@ -15,7 +16,10 @@ class BufferPool:
         self.path = ""
         self.capacity = capacity
         self.lru_cache = OrderedDict()
-
+        self.last_tail_page = {} #
+        self.last_rid = {} #'base': rid; 'tail':rid
+        #self.get_latch = Lock()
+        
     def initial_path(self, path):
         self.path = path
 
@@ -74,7 +78,7 @@ class BufferPool:
 
 
     def get_page(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        
+        #self.get_latch.acquire()
         buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = path + '.pkl'
@@ -92,12 +96,49 @@ class BufferPool:
             f.close()
     
         else: 
-            # page in already in disk
+            # page is already in disk
             if not self.check_page_in_buffer:
                 if self.check_capacity(): #if it is full, then remove
                     self.remove_page()
                 self.lru_cache[buffer_id] = self.read_page(path)
+            else:
+                # we should suppose that the user will never create same_table names...
+                pass
+        #self.get_latch.release()
+        return self.lru_cache[buffer_id]
 
+    def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + str(page_range_id))
+        return path
+
+    def get_tail_page(self, table_name, column_id, page_range_id, base_or_tail):
+        #self.get_latch.acquire()
+        buffer_id = (table_name, column_id, page_range_id, base_or_tail)
+        path = self.buffer_to_path_tail(table_name, column_id, page_range_id, base_or_tail)
+        path = path + '.pkl'
+        #new page
+        if not os.path.isfile(path): #if in this path there is no such file
+            if self.check_capacity():
+                self.remove_page()
+            self.add_page(buffer_id, default= False)
+            
+            #make a dir; just a file without any data init
+            dirname = os.path.dirname(path)
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            f = open(path, 'wb')
+            f.close()
+    
+        else: 
+            # page is already in disk
+            if not self.check_page_in_buffer:
+                if self.check_capacity(): #if it is full, then remove
+                    self.remove_page()
+                self.lru_cache[buffer_id] = self.read_page(path)
+            else:
+                # we should suppose that the user will never create same_table names...
+                pass
+        #self.get_latch.release()
         return self.lru_cache[buffer_id]
 
     def get_record(self, table_name, column_id, multipage_id, page_range_id, record_id, base_or_tail):
@@ -105,9 +146,25 @@ class BufferPool:
         record_data = page.get(record_id)
         return record_data 
 
+    def get_tail_record(self, table_name, column_id, page_range_id, record_id, base_or_tail):
+        page = self.get_tail_page(table_name, column_id, page_range_id, base_or_tail) 
+        record_data = page.get(record_id)
+        return record_data
 
-
+    def set_new_rid(self, page_type,last_rid): #use it when insert record
+        self.last_rid[page_type] = last_rid
     
+    def get_last_rid(self, page_type): #get last rid from bufferpool
+        if len(self.lru_cache.keys()) == 0: #the bufferpool is empty, no insert or update
+            return 0
+        
+    def last_rid_page(self, page_type):
+        if page_type == 'base':
+            last_rid = self.last_rid['base']
+        else:
+            last_rid = self.last_rid['tail']
+
+        last_rid
 
 
 

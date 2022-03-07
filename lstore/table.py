@@ -1,11 +1,12 @@
 import enum
 from lstore.bufferpool import BufferPool
-from lstore.index import Index
+from lstore.index import Index, Tail_Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
 import threading
 from collections import deque
+from copy import copy
 
 class Record:
 
@@ -31,10 +32,18 @@ class Table:
         self.updates = []
         self.page_directory = {}
         self.index = Index(self)
+        self.tail_index = Tail_Index(self)
         self.key_lst = []
 
         self.bufferpool = BufferPool()
+        #self.mergeQ = deque()
+        self.merge_queue_matrix = []
 
+        self.closed = False
+        #self.merge_trigger = threading.Event()
+        #self.merge_thread = threading.Thread(name='merge', target=self.merge)
+
+        
         """
         Each base page has a merge queue
         merge queue is a deque 
@@ -53,69 +62,68 @@ class Table:
         for i in range(self.num_columns + DEFAULT_COLUMN):
             self.page_directory['base']=[[MultiPage()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
             self.page_directory['tail'] = [[Page()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
-            
+
+    def set_merge_queue(self):
+        base_page_range = 1 #update
+        for col in range(self.num_columns):
+            self.merge_queue_matrix.append([])
+            for i in range(base_page_range):
+                self.merge_queue_matrix[col].append(deque())
+
+    def set_table_closed(self):
+        self.table_closed = True
+        #self.merge_trigger.set()
+        return
+
+    def get_merge_range_base(self, tail_merge_range):
+        rid = tail_merge_range * RECORDS_PER_PAGE
+        multipage_id, page_range, record_index = self.rid_base(rid)
+        return multipage_id, page_range
+
+    def get_merge_range_tail(self):
+        last_tail_rid = self.bufferpool.last_rid_page('tail')
+        page_range, record_index = self.rid_base(last_tail_rid)
+        return page_range
+    
     # merge function        
     # https://www.researchgate.net/publication/324150481_L-Store_A_Real-time_OLTP_and_OLAP_System
     # check page 6 for details
-    
-    # input: queue of unmerged tailpages
-    def merge(self, mergeQ):
-        print("Starting merging")
-        # Get Base RID, base indirection
-        while true:
-            # step 1
-            # wait until all concurrent merge is empty
-            if not (self.mergeQ.empty()):
-                # step 2
-                # batchTailPage c mergeQ.dequeue()
-                # batchConsPage ← batchTailPage.getBasePageCopy()
-                # decompress(batchConsPage)
-                # HashMap seenUpdatesH
-                pass
-            # step 3
-            i = 0
-            for i < batchTailPage.size:
-                # tailPage ← batchTailPages[i]
-                i = i + 1
-                j = k - 1 # what is k?
-                for  j >= tailPage.size:
-                    # record[j] = jth record in tailPage
-                    # RID = record[j].RID
-                    j = j - 1
-                    if seenUpdatesH does not contain RID:
-                        seenUpdatesH.add(RID)
-                        # copy the latest version of record into consolidated pages
-                        batchConsPage.update(RID, record[j])
-                    if all RIDs OR all tail pages are seen:
-                        compress(batchConsPage)
-                        persist(batchConsPage)
-                        stop examining remaining tail pages
-            # step 4
-            batchBasePage c batchTailPage.getBasePageRef() 
-            PageDirect.swap(batchBasePage, batchConsPage)
-            # step 5
-            deallocateQ.enqueue(batchBasePage)
+    def merge_trigger(self):
+        if self.num_updates % MERGE_TRIGGER == 0:
+            pass
+            #self.merge_trigger.set()
+            #self.merge_thread.start()
+            #self.merge_thread.join()
             
-        # return:  queue of outdated and consolidated base pages to be deallocated
-        
-        # origin code down here:
-        '''
-        base_rid = self.index.locate(self.table.key, )[0]
-        multipage_range, page_range, record_index = self.rid_base(base_rid)
-        base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index)
-        base_indirection_int = int.from_bytes(bytes(base_indirection), byteorder='big')
-        '''
+    def merge(self):
+        print("Start merging")
+        while not self.closed: #if the table is not closed
+            # step0: wait until all concurrent merge is empty
+            #self.merge_trigger.wait()
+            multipage_id, merge_range = self.get_merge_range()
+            merge_range = merge_range + 1
+            
+            if self.closed:
+                 self.merge_range += 1
+            
+            # create a copy of base range
+            for col in range(self.num_columns):
+                for page_index in range(self.merge_range):
+                    merge_queue = self.merge_queue_matrix[col][page_index]
+                    column_index = DEFAULT_COLUMN + col
+                    new_base_page = copy(self.bufferpool.get_page(self.name, column_index, multipage_id, page_index, 'base'))
+                    seen_update = {}
 
-    def get_tail_indirection(self, indirection, column, page_index):
-        indirection_int = int(str(indirection.decode()).split('\x00')[-1])    # Covert byte to int
-        return int.from_bytes(self.page_directory["Tail"][column + DEFAULT_COLUMN][page_index][indirection_int // DEFAULT_COLUMN].get(indirection_int % RECORDS_PER_PAGE), byteorder='big')
+                    while len(merge_queue) != 0:
+                        tuple = merge_queue.popleft()
+                        base_rid = tuple[0]
+                        tail_rid = tuple[1]
+                        seen_update[base_rid] = tail_rid
 
-    def get_tail_columns(self, indirection, page_index):
-        columns = []
-        indirection_int = int(str(indirection.decode()).split('\x00')[-1])  # Covert byte to int
-        for i in range(0, self.num_columns):
-            columns.append(int.from_bytes(self.page_directory["tail"][i+DEFAULT_COLUMN][page_index][indirection_int//RECORDS_PER_PAGE].get(indirection_int%RECORDS_PER_PAGE), byteorder='big'))
-        return columns
+                    for base_rid, tail_rid in seen_update.items():
+                        pass
+            #self.merge_trigger.clear()
+        return
 
     def base_write(self, data):
         self.num_records += 1
@@ -124,72 +132,58 @@ class Table:
             #rid = number of records
             multipage_id, page_range_id, record_id = self.rid_base(self.num_records)
             multiPages = self.page_directory["base"][i][-1]
-            page = multiPages.get_current()
+            page1 = multiPages.get_current()
             #write the page in bufferpool
-            page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
+            page2 = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             
-
             if not multiPages.last_page(): #not the last pag
-                if not page.has_capacity(): #page is full 
+                if not page1.has_capacity(): #page is full 
                     self.page_directory['base'][i][-1].add_page_index()
                     page_range_id += 1
-                    page = multiPages.get_current()
-                    page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
+                    page1 = multiPages.get_current()
+                    page2 = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             else:
-                if not page.has_capacity():
+                if not page1.has_capacity():
                     self.page_directory['base'][i].append(MultiPage())
                     multipage_id += 1
                     page_range_id = 0
-                    page = self.page_directory['base'][i][-1].get_current()
-                    page = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
+                    page1 = self.page_directory['base'][i][-1].get_current()
+                    page2 = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
 
-            page.write(value)
-            page.dirty = True
+            page1.write(value)
+            page2.write(value)
+            page1.dirty = True
+            page2.dirty = True
 
 
     def tail_write(self, data):
         for col, val in enumerate(data):
             page_id, record_index = self.rid_tail(self.num_updates)
-            page = self.bufferpool.get_page(self.name, col, page_id, page_id, 'Tail_Page')
-            if val == None:
-                continue
-            else:
+            page = self.bufferpool.get_tail_page(self.name, col, page_id, 'Tail_Page') #write in butter
+            tail_page = self.page_directory['tail'][col][-1] # write in tail page for test only
+            if not tail_page.has_capacity():
+                self.page_directory['tail'][col].append(Page())
                 tail_page = self.page_directory['tail'][col][-1]
-                if not tail_page.has_capacity():
-                    self.page_directory['tail'][col].append(Page())
-                    tail_page = self.page_directory['tail'][col][-1]
-                    page_id += 1
-                    page = self.bufferpool.get_page(self.name, col, page_id, page_id, 'Tail_Page')
+                page_id += 1
+                page = self.bufferpool.get_tail_page(self.name, col, page_id, 'Tail_Page')
                 
-                tail_page.dirty = True
-                tail_page.write(val)
+            tail_page.dirty = True
+            tail_page.write(val)
+            page.write(val)
 
     def rid_base(self, rid):
         record_multipage = 0
-        if rid % (RECORDS_PER_PAGE * MAXPAGE) == 0:
-            record_multipage = rid / (RECORDS_PER_PAGE * MAXPAGE) - 1
-        else:
-            record_multipage = rid // (RECORDS_PER_PAGE * MAXPAGE)
-
-        if record_multipage < 0:
-            record_multipage = 0
+        record_multipage = rid // (RECORDS_PER_PAGE * MAXPAGE)
         
         rid = rid - RECORDS_PER_PAGE * MAXPAGE * record_multipage
         
         record_page_range = 0
-        if rid % RECORDS_PER_PAGE == 0:
-            record_page_range = (rid / RECORDS_PER_PAGE) - 1
-        else:
-            record_page_range = (rid // RECORDS_PER_PAGE)
 
-        if record_page_range < 0:
-            record_page_range = 0
+        record_page_range = (rid // RECORDS_PER_PAGE)
 
         rid = rid - (RECORDS_PER_PAGE * record_page_range)
 
-        record_index = rid - 1
-        if record_index < 0:
-            record_index = 0
+        record_index = rid
 
         return int(record_multipage), int(record_page_range), int(record_index)
 
@@ -197,28 +191,12 @@ class Table:
         page_range = 0
         record_index = 0
 
-        if rid // RECORDS_PER_PAGE != 1:
-            page_range = rid // RECORDS_PER_PAGE
-        else:
-            page_range = rid // RECORDS_PER_PAGE - 1 #if update = 512 => is full but still in page_range 1
-        
-        rid = rid - RECORDS_PER_PAGE * page_range
-
-        record_index = rid - 1
-        if record_index < 0:
-            record_index = 0
+        page_range = (rid // RECORDS_PER_PAGE)
+        rid = rid - (RECORDS_PER_PAGE * page_range)
+        record_index = rid      
 
         return int(page_range), int(record_index)
 
-    def get_schema_encoding(self, indirection):
-        #convert into string
-        pass
-
-    #TODO: bufferpool update
-    def get_recent_tail_record(self, base_indirection):
-        tail_page = self.page_directory['tail'][INDIRECTION_COLUMN] #list with page()
-
-        pass
 
     def invalidate_record(self, rid):
         # invalidates record based on its rid
@@ -238,9 +216,27 @@ class Table:
 
         return schema_encoding
 
-    def schema_update(self, old_schema, query_column):
+    def new_schema_encoding(self, old_schema, query_column):
         return old_schema | (1<<query_column)
 
     def schema_update_check(self, schema, query_column):
         return (schema & (1<<query_column))>>query_column == 1 #false -> no update
-        
+
+    def new_base_indirection(self, base_indirection,base_rid,tail_rid):
+        return base_indirection - tail_rid - base_rid - 1
+
+    # get data from bufferpool
+    def get_tail_record_column(self, tail_rid, column):
+        page_range, record_index = self.rid_tail(tail_rid)
+        val = self.bufferpool.get_tail_record(self.name, column, page_range, record_index, 'Tail_Page') #bytes
+        val = int.from_bytes(val, byteorder='big')
+        return val
+
+    # using tail_rid to get record from bufferpool
+    def get_tail_record(self, tail_rid):
+        column = []
+        for i in range(self.num_columns):
+            column.append(self.get_tail_record_column(tail_rid, 4 + i))
+        return column
+
+    

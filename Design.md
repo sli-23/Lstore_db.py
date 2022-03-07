@@ -9,12 +9,9 @@
     - [Tail_write](#tail_write)
     - [Update Index](#update-index)
   - [Query - `query.select(self, primary_key, column, query_columns)`](#query---queryselectself-primary_key-column-query_columns)
-    - [Read from BufferPool](#read-from-bufferpool)
-    - [Read from Index](#read-from-index)
   - [Query - `query.sum(self, start_range, end_range, aggregate_column_index)`](#query---querysumself-start_range-end_range-aggregate_column_index)
   - [BufferPool](#bufferpool)
   - [Merge](#merge)
-  - [Quecc](#quecc)
 
 ## First Layer - `db.py`
 
@@ -73,7 +70,7 @@ bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x13')
 
 * `bufferpool.get_page()`: this function makes page file in the disk (more details in the later section). It also allows reading data from disk (before closing the BufferPool, it will not have any data in the file but only a filename).
 
-**Suppose we are only inserting the data:**
+**Suppose we only insert records:**
 * The size of BufferPool is `1000`, the basic unit it `Page()`. When inserting values, we will insert a column or a `Page()` as a basic unit in the BufferPool.
 * When inserting a record in table, the BufferPool will be shown as:
 ```python
@@ -112,9 +109,55 @@ for i, val in enumerate(column):
         self.table.index.create_index(i, rid, val)
 ```
 
+---
 ## Query - `query.update(self, primary_key, *columns)`
 
+![](images/2022-03-06-11-55-50.png)
+
 ### Tail_write
+
+when we update records, we will also insert tail pages in BufferPool:
+```python
+('Grades', 0, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cad70>
+('Grades', 1, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cadd0>
+('Grades', 2, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cae60>
+('Grades', 3, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208ca8c0>
+('Grades', 4, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208ca860>
+('Grades', 5, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cafe0>
+('Grades', 6, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cb040>
+('Grades', 7, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cb0a0>
+('Grades', 8, 0, 0, 'Base_Page')
+<lstore.page.Page object at 0x1208cb100>
+('Grades', 0, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb340>
+('Grades', 1, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb3d0>
+('Grades', 2, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb370>
+('Grades', 3, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb460>
+('Grades', 4, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb4c0>
+('Grades', 5, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208caf20>
+('Grades', 6, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb520>
+('Grades', 7, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb550>
+('Grades', 8, 0, 'Tail_Page')
+<lstore.page.Page object at 0x1208cb640>
+```
+
+<center>
+<img src="images/2022-03-06-10-29-34.png" width="300"/></center>
 
 ### Update Index
 ![](images/2022-02-28-17-37-16.png)
@@ -139,20 +182,64 @@ def update_index(self, key, column_number, new_value):
             tree.insert(rid, new_value)
 ```
 
+
+
+**Update example:**
+Suppose we want to insert 2 record and update 3 times each of record:
+
+* Before update:
+    ```python
+    [18446744073709551615, 0, 1646595348, 0, 92106430, 1, 14, 1, 19]
+    [18446744073709551615, 1, 1646595348, 0, 92106429, 13, 2, 10, 10]
+    ```
+* Updates:
+    ```python
+    1 update on [92106430, 1, 14, 1, 19] and [None, None, 8, None, None] : [92106430, 1, 8, 1, 19]
+    2 update on [92106430, 1, 8, 1, 19] and [None, None, 8, 2, None] : [92106430, 1, 8, 2, 19]
+    3 update on [92106430, 1, 8, 2, 19] and [None, None, 8, 2, 4] : [92106430, 1, 8, 2, 4]
+    4 update on [92106429, 13, 2, 10, 10] and [None, None, 1, None, None] : [92106429, 13, 1, 10, 10]
+    5 update on [92106429, 13, 1, 10, 10] and [None, None, 1, 18, None] : [92106429, 13, 1, 18, 10]
+    6 update on [92106429, 13, 1, 18, 10] and [None, None, 1, 18, 20] : [92106429, 13, 1, 18, 20]
+    ```
+* After update:
+  * Tail page:
+    ```python
+    # first primary key
+    [18446744073709551614, 0, 1646595348, 4, 0, 0, 8, 0, 0]
+    [18446744073709551612, 1, 1646595348, 12, 0, 0, 8, 2, 0]
+    [18446744073709551609, 2, 1646595348, 28, 0, 0, 8, 2, 4]
+    # second primary key
+    [18446744073709551610, 3, 1646595348, 4, 0, 0, 1, 0, 0]
+    [18446744073709551604, 4, 1646595348, 12, 0, 0, 1, 18, 0]
+    [18446744073709551597, 5, 1646595348, 28, 0, 0, 1, 18, 20]
+    ```
+
+```python
+Original record:
+[18446744073709551609, 0, 1646595348, 28, 92106430, 1, 14, 1, 19]
+tail_record:
+[18446744073709551609, 2, 1646595348, 28, 0, 0, 8, 2, 4]
+select key to check:
+[92106430, 1, 8, 2, 4]
+
+
+Original record:
+[18446744073709551597, 1, 1646595348, 28, 92106429, 13, 2, 10, 10]
+tail_record:
+[18446744073709551597, 5, 1646595348, 28, 0, 0, 1, 18, 20]
+select key to check:
+[92106429, 13, 1, 18, 20]
+```
+
 ## Query - `query.select(self, primary_key, column, query_columns)`
 
 
 <center>
 <img src="images/2022-02-28-05-23-04.png" width="500"/></center>
 
-### Read from BufferPool
 
-### Read from Index
-
+---
 ## Query - `query.sum(self, start_range, end_range, aggregate_column_index)`
-
-<center>
-<img src="images/2022-02-28-05-34-20.png" width="500"/></center>
 
 ```python
 def locate_range(self, begin, end, column=None): #primary key - rids - values
@@ -187,8 +274,9 @@ def sum(self, start_range, end_range, aggregate_column_index):
         return sum
 ```
 
+---
 ## BufferPool
 
-## Merge
 
-## Quecc
+---
+## Merge

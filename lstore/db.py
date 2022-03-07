@@ -19,6 +19,8 @@ class Database():
     def open(self, path):
         try:
             self.path = path
+            self.bufferpool.initial_path(path)
+            #restore if there
             if not os.path.exists(path):
                 os.makedirs(path)
             self.bufferpool.initial_path(path)

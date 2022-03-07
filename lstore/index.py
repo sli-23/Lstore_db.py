@@ -8,6 +8,25 @@ Indices are usually B-Trees, but other data structures can be used as well.
 from lstore.bplustree import BPlusTree
 from lstore.config import *
 
+class Tail_Index:
+    def __init__(self, table):
+        self.table = table
+        self.index = BPlusTree(150) #key: primary key value: (newest_tail_indirection, tail rid)
+
+    def locate(self, tail_indirection):
+        return  self.index.retrieve(tail_indirection)
+
+    def create_index(self, key, value):
+        self.index.insert(key, value)
+
+
+    def update(self, key, new_value):
+        self.index.delete(key)
+        self.index.insert(key, new_value)
+
+    #TODO if merge then empty tail_index?
+
+    
 class Index:
 
     def __init__(self, table):

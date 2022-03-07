@@ -17,6 +17,7 @@ class Page:
         self.pinned = 1
         byte_value = value.to_bytes(8, byteorder='big')   # Convert int data to byte data.
         self.data[self.num_records * 8: (self.num_records + 1) * 8]  = byte_value# Write into page.data.
+        self.num_records += 1
         self.pinned = 0
 
 
