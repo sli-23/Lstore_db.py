@@ -40,7 +40,9 @@ class Page:
         :return: None
         """
         self.dirty = True
+        self.pinned = 1
         self.data[index*8:(index+1)*8] = value.to_bytes(8, byteorder='big')
+        self.pinned = 0
         
     def get_data_num(self):
         return self.num_records

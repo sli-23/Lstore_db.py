@@ -1,3 +1,4 @@
+from concurrent.futures import thread
 from email.mime import base
 import enum
 
@@ -72,12 +73,15 @@ class Table:
     # https://www.researchgate.net/publication/324150481_L-Store_A_Real-time_OLTP_and_OLAP_System
     # check page 6 for details
 
-    def mergetrigger(self):
+    def mergetrigger(self, merge_trigger = False):
         if self.num_updates % MERGE_TRIGGER == 0:
-            pass
-            #self.merge_trigger.set()
-            #self.merge_thread.start()
-            #self.merge_thread.join()
+            merge_thread = threading.Thread(target=self.merge())
+            merge_thread.start()
+            merge_thread.join()
+        elif merge_trigger == True:
+            merge_thread = threading.Thread(target=self.merge())
+            merge_thread.start()
+            merge_thread.join()
     
     #using tail indirection to get base rid and primary key
     def get_base_page_range(self, tail_indirection):
@@ -140,14 +144,22 @@ class Table:
             column.append(val)
         return column
 
+    def get_multipage_range(self, tail_rid):
+        # Using tail rid - tail indirection - to detect if the multipage should change
+        page_range, record_index = self.rid_tail(tail_rid)
+        tail_indirection = self.bufferpool.get_tail_record(self.name, INDIRECTION_COLUMN, page_range, record_index, 'Tail_Page')
+        tail_indirection = int.from_bytes(tail_indirection, byteorder='big')
+        base_rid = self.indirection_index.locate(tail_indirection)[0][1]
+        multipage_id, page_range, record_index = self.rid_base(base_rid)
+        return multipage_id
+
     def merge(self):
         print("Start merging")
         # step0: wait until all concurrent merge is empty
-        #self.merge_trigger.wait()
-
         # get merge range
         tail_range = self.get_tail_range()
-        multipage_id = 0 #Update later.......
+        last_tail_rid = self.bufferpool.last_rid['tail']
+        multipage_id = self.get_multipage_range(last_tail_rid)
 
         for column_id in range(self.num_columns):
             #get the base page range in that merge range
@@ -232,7 +244,6 @@ class Table:
             page1.dirty = True
             page2.dirty = True
 
-
     def tail_write(self, data):
         for col, val in enumerate(data):
             page_id, record_index = self.rid_tail(self.num_updates)
@@ -249,7 +260,6 @@ class Table:
             tail_page.dirty = True
             page.dirty = True
             
-
     def rid_base(self, rid):
         record_multipage = 0
         record_multipage = rid // (RECORDS_PER_PAGE * MAXPAGE)
@@ -268,15 +278,6 @@ class Table:
         record_index = rid      
 
         return int(page_range), int(record_index)
-
-
-    def invalidate_record(self, rid):
-        # invalidates record based on its rid
-        self.lock.acquire()
-        # invalidate base record
-        #delete
-        self.lock.release()
-        pass
 
     def schema_encoding(self, column):
         schema_encoding = ''
@@ -324,3 +325,7 @@ class Table:
         for i in range(self.num_columns):
             column.append(self.get_base_record_data(base_rid, 4 + i))
         return column
+
+    def close(self):
+        self.closed = True
+        self.mergetrigger(merge_trigger=True)

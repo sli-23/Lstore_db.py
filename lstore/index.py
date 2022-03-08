@@ -28,7 +28,7 @@ class Tail_Index:
 class Indirection_Index:
     def __init__(self, table):
         self.table = table
-        self.index = BPlusTree(150) #key: indirection value: (primary key, base rid, tail rid)
+        self.index = BPlusTree(150) #key: indirection value: (primary key, base rid, tail)
 
     def locate(self, indirection):
         return  self.index.retrieve(indirection)

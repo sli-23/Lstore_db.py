@@ -40,7 +40,7 @@ class Database():
 
     def close(self):
         for name, table in self.tables.items():
-            #table.close() #it will trigger merger and evict all
+            #table.close() #it will trigger merge and evict all
             self.keydict(name, table)
         
         for key in self.primary_key.keys():
@@ -51,6 +51,7 @@ class Database():
         
         for key in self.tables.keys():
             table = self.tables[key]
+            table.bufferpool.close()
             tabledata_file = open(self.path + '/' + key + '.table', 'wb')
             pickle.dump(table, tabledata_file)
             tabledata_file.close()
@@ -70,7 +71,8 @@ class Database():
     def create_table(self, name, num_columns, key_index):
         try:
             shutil.rmtree(name, ignore_errors=True)
-        except:pass
+        except:
+            pass
         if name in self.tables.keys():
             print(f'table "{name}" exists...')
             table = self.tables[name]

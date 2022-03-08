@@ -57,7 +57,7 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 200
+number_of_records = 10
 number_of_aggregates = 100
 seed(3562901)
 count = []
@@ -92,6 +92,8 @@ for key in keys:
         # print('select on', key, ':', record)
 print("Select finished")
 
+for i in range(number_of_records):
+    print(base_record(i))
 
 count_update = 0
 # update test
@@ -154,5 +156,21 @@ for i in range(3*number_of_records):
 #print(grades_table.bufferpool.get_base_range())
 #print(grades_table.bufferpool.get_page('Grades', 8, 0, 0, 'Base_Page').num_records)
 
-print(grades_table.merge())
-print(grades_table.bufferpool.check_page_in_buffer(1))
+print('Before merge: ')
+for i in range(number_of_records):
+    print(buffer_base(i))
+
+for i in range(3*number_of_records):
+    col = tail_record(i)
+    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        break
+    print(col)
+
+print(grades_table.num_updates)
+print(grades_table.mergeQ)
+grades_table.close()
+print(grades_table.mergeQ)
+
+print('After merge: ')
+for i in range(number_of_records):
+    print(buffer_base(i))
