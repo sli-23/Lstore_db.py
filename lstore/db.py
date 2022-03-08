@@ -2,10 +2,9 @@ from lstore.table import Table
 from lstore.bufferpool import *
 from lstore.index import Index
 from lstore.config import *
-import time
 import pickle
 import os
-import sys
+import shutil
 
 class Database():
 
@@ -59,6 +58,8 @@ class Database():
         os.remove(self.path + '/' + 'Tables')
         os.remove(self.path + '/' + 'Primary_Key')
 
+        #
+
 
     """
     # Creates a new table
@@ -67,6 +68,9 @@ class Database():
     :param key: int             #Index of table key in columns
     """
     def create_table(self, name, num_columns, key_index):
+        try:
+            shutil.rmtree(name, ignore_errors=True)
+        except:pass
         if name in self.tables.keys():
             print(f'table "{name}" exists...')
             table = self.tables[name]

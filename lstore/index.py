@@ -11,7 +11,7 @@ from lstore.config import *
 class Tail_Index:
     def __init__(self, table):
         self.table = table
-        self.index = BPlusTree(150) #key: primary key value: (newest_tail_indirection, tail rid)
+        self.index = BPlusTree(150) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
 
     def locate(self, tail_indirection):
         return  self.index.retrieve(tail_indirection)
@@ -19,14 +19,27 @@ class Tail_Index:
     def create_index(self, key, value):
         self.index.insert(key, value)
 
-
     def update(self, key, new_value):
         self.index.delete(key)
         self.index.insert(key, new_value)
 
     #TODO if merge then empty tail_index?
 
-    
+class Indirection_Index:
+    def __init__(self, table):
+        self.table = table
+        self.index = BPlusTree(150) #key: indirection value: (primary key, base rid, tail rid)
+
+    def locate(self, indirection):
+        return  self.index.retrieve(indirection)
+
+    def create_index(self, indirection, indirection_id):
+        self.index.insert(indirection, indirection_id)
+
+    def update(self, key, new_value):
+        self.index.delete(key)
+        self.index.insert(key, new_value)
+
 class Index:
 
     def __init__(self, table):

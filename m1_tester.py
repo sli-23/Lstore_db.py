@@ -1,8 +1,14 @@
 from lstore.db import Database
 from lstore.query_bplustree import Query
 from xmlrpc.client import MAXINT
-
+import shutil
 from random import choice, randint, sample, seed
+
+try:
+    shutil.rmtree('Grades', ignore_errors=True)
+except:
+    pass
+
 
 db = Database()
 # Create a table  with 5 columns
@@ -34,6 +40,7 @@ for i in range(0, number_of_records):
     query.insert(*records[key])
     # print('inserted', records[key])
 print("Insert finished")
+
 
 # Check inserted records using select query
 for key in records:

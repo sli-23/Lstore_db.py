@@ -277,6 +277,4 @@ def sum(self, start_range, end_range, aggregate_column_index):
 ---
 ## BufferPool
 
-
----
 ## Merge

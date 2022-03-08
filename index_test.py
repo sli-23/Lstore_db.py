@@ -9,5 +9,5 @@ from random import choice, randint, sample, seed
 
 db = Database()
 grades_table = db.create_table('Grades', 5, 0)
-print(grades_table.page_directory['tail'])
+print(grades_table.rid_tail(512))
 
