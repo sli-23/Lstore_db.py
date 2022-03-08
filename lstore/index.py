@@ -76,7 +76,7 @@ class Index:
     """
     # Update index
     """
-    def update_index(self, key, column_number, new_value):
+    def update_value(self, key, column_number, new_value):
         rid = self.locate(self.table.key, key)[0]
         if column_number == self.table.key:
             tree = self.indices[self.table.key]
@@ -92,7 +92,7 @@ class Index:
     # optional: Create index on specific column
     """
 
-    def create_index(self, column_number, key, value):
+    def create_value(self, column_number, key, value):
         tree = self.indices[column_number]
         tree.insert(key, value)
 

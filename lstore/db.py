@@ -40,7 +40,7 @@ class Database():
 
     def close(self):
         for name, table in self.tables.items():
-            #table.close() #it will trigger merge and evict all
+            #table.close() #it will trigger merger and evict all
             self.keydict(name, table)
         
         for key in self.primary_key.keys():
@@ -51,15 +51,15 @@ class Database():
         
         for key in self.tables.keys():
             table = self.tables[key]
-            table.bufferpool.close()
+            print('Closing the Table...')
+            table.close()
+            table.bufferpool.evict() #close the BufferPool
             tabledata_file = open(self.path + '/' + key + '.table', 'wb')
             pickle.dump(table, tabledata_file)
             tabledata_file.close()
 
         os.remove(self.path + '/' + 'Tables')
         os.remove(self.path + '/' + 'Primary_Key')
-
-        #
 
 
     """

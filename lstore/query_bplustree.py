@@ -87,9 +87,9 @@ class Query:
         #Update Index
         for i, val in enumerate(column):
             if i == self.table.key : #in the first column, key = primary key, value = rid
-                self.table.index.create_index(i, val, rid)
+                self.table.index.create_value(i, val, rid)
             else: 
-                self.table.index.create_index(i, rid, val)
+                self.table.index.create_value(i, rid, val)
 
         #bufferpool
         self.table.bufferpool.set_new_rid('base', rid)
@@ -250,14 +250,6 @@ class Query:
         self.table.bufferpool.set_new_rid('tail', tail_rid)
         self.table.mergeQ.append(tail_rid)
         self.table.num_updates += 1
-
-        #update index
-        for col, value in enumerate(columns):
-            if value == None:
-                continue
-            else:
-                self.table.index.update_index(primary_key, col, value)
-        
         #check merge
         self.table.mergetrigger()
 

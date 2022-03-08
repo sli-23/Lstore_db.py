@@ -158,6 +158,7 @@ class BufferPool:
                     else:
                         path = self.buffer_id_path_tail(buffer_id)
                     self.write_page(page, path)
+                    buffer_id_lst.pop(buffer_id_lst.index(buffer_id))
                 if page.dirty == False:
                     buffer_id_lst.pop(buffer_id_lst.index(buffer_id))
             time.sleep(1)

@@ -84,8 +84,10 @@ class Table:
             merge_thread.join()
     
     #using tail indirection to get base rid and primary key
+    #TODO: There is some probabilities that it will run error (have no idea)
     def get_base_page_range(self, tail_indirection):
-        base_rid = self.indirection_index.locate(tail_indirection)[0][1]
+        #print(tail_indirection)
+        base_rid = self.indirection_index.locate(tail_indirection)[0][1] #some problems in here
         multipage_id, page_range, record_id = self.rid_base(base_rid)
         return page_range
 
