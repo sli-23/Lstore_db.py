@@ -156,3 +156,4 @@ for i in range(3*number_of_records):
 #print(grades_table.bufferpool.get_base_range())
 #print(grades_table.bufferpool.get_page('Grades', 8, 0, 0, 'Base_Page').num_records)
 
+print(grades_table.create_table_index(2))

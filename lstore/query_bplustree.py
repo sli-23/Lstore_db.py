@@ -84,7 +84,7 @@ class Query:
         self.table.base_write(default_column)
         self.table.key_lst.append(columns[self.table.key]) #Using in import Primary_key
 
-        #Update Index
+        #Update Index TODO: change..
         for i, val in enumerate(column):
             if i == self.table.key : #in the first column, key = primary key, value = rid
                 self.table.index.create_value(i, val, rid)
@@ -113,7 +113,8 @@ class Query:
 
         # index_value will be always a key 
         # Using key to map the rid => page_indirection (multipage_id, page_range_id, record_index)
-        rid = self.table.index.locate(self.table.key, index_value)[0]
+        rid = self.table.index.locate(self.table.key, index_value)[0] # Using primary key to get rid
+        
         multipage_id, page_range_id, record_id = self.table.rid_base(rid)
 
         # ------------- SELECT DATA BY USING BufferPool ------------- #
@@ -178,7 +179,7 @@ class Query:
             print('Detect Error')
             return False
 
-        base_rid = self.table.index.locate(self.table.key, primary_key)[0]
+        base_rid = self.table.index.locate(self.table.key, primary_key)[0] #Using primary key to get rid
         (multipage_range, page_range, record_index) = self.table.rid_base(base_rid)
         base_indirection = self.table.page_directory['base'][INDIRECTION_COLUMN][multipage_range].pages[page_range].get(record_index) #bytes
         base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')

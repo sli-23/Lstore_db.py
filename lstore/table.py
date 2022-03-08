@@ -328,6 +328,20 @@ class Table:
             column.append(self.get_base_record_data(base_rid, 4 + i))
         return column
 
+    def create_table_index(self, column_number):
+        # create index on the non primary columns
+        if self.index.indices[column_number] == True:
+            print("Index existed")
+            return
+        tree = self.index.tree
+        for base_rid in range(self.num_records):
+            multipage_id, page_id, record_id = self.rid_base(base_rid)
+            
+
+        
+
     def close(self):
         self.closed = True
         self.mergetrigger(merge_trigger=True)
+
+    

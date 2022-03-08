@@ -8,43 +8,13 @@ Indices are usually B-Trees, but other data structures can be used as well.
 from lstore.bplustree import BPlusTree
 from lstore.config import *
 
-class Tail_Index:
-    def __init__(self, table):
-        self.table = table
-        self.index = BPlusTree(150) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
-
-    def locate(self, tail_indirection):
-        return  self.index.retrieve(tail_indirection)
-
-    def create_index(self, key, value):
-        self.index.insert(key, value)
-
-    def update(self, key, new_value):
-        self.index.delete(key)
-        self.index.insert(key, new_value)
-
-    #TODO if merge then empty tail_index?
-
-class Indirection_Index:
-    def __init__(self, table):
-        self.table = table
-        self.index = BPlusTree(150) #key: indirection value: (primary key, base rid, tail)
-
-    def locate(self, indirection):
-        return  self.index.retrieve(indirection)
-
-    def create_index(self, indirection, indirection_id):
-        self.index.insert(indirection, indirection_id)
-
-    def update(self, key, new_value):
-        self.index.delete(key)
-        self.index.insert(key, new_value)
-
 class Index:
 
     def __init__(self, table):
         self.table = table
         self.indices = [BPlusTree(150) for _ in range(table.num_columns)]  # Give a default value for indices.
+        self.indices[self.table.key] = BPlusTree(150)
+        self.tree = BPlusTree(150)
 
     """
     # returns the location of all records with the given value on column "column"
@@ -87,6 +57,8 @@ class Index:
             tree.delete(rid)
             tree.insert(rid, new_value)
 
+    def update_index(self):
+        pass
 
     """
     # optional: Create index on specific column
@@ -96,6 +68,12 @@ class Index:
         tree = self.indices[column_number]
         tree.insert(key, value)
 
+    def create_index(self, column_number):
+        # create index on the non primary columns
+        if self.indices[column_number] == True:
+            print("Index existed")
+            return
+
     """
     # optional: Drop index of specific column
     """
@@ -104,4 +82,34 @@ class Index:
         tree = self.indices[column_number]
         tree.delete(key)
 
-    
+class Tail_Index:
+    def __init__(self, table):
+        self.table = table
+        self.index = BPlusTree(150) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
+
+    def locate(self, tail_indirection):
+        return  self.index.retrieve(tail_indirection)
+
+    def create_index(self, key, value):
+        self.index.insert(key, value)
+
+    def update(self, key, new_value):
+        self.index.delete(key)
+        self.index.insert(key, new_value)
+
+    #TODO if merge then empty tail_index?
+
+class Indirection_Index:
+    def __init__(self, table):
+        self.table = table
+        self.index = BPlusTree(150) #key: indirection value: (primary key, base rid, tail)
+
+    def locate(self, indirection):
+        return  self.index.retrieve(indirection)
+
+    def create_index(self, indirection, indirection_id):
+        self.index.insert(indirection, indirection_id)
+
+    def update(self, key, new_value):
+        self.index.delete(key)
+        self.index.insert(key, new_value)
