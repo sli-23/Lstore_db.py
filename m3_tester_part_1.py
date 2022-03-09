@@ -44,6 +44,7 @@ for i in range(0, number_of_records):
     t = insert_transactions[i % number_of_transactions]
     t.add_query(q.insert, grades_table, *records[key])
 
+
 transaction_workers = []
 for i in range(num_threads):
     transaction_workers.append(TransactionWorker())

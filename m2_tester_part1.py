@@ -17,7 +17,7 @@ grades_table = db.create_table('Grades', 5, 0)
 query = Query(grades_table)
 
 # dictionary for records to test the database: test directory
-records = {}
+records = {}#
 
 number_of_records = 1000
 number_of_aggregates = 100

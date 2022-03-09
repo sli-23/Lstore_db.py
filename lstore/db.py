@@ -56,12 +56,12 @@ class Database():
         for key in self.tables.keys():
             table = self.tables[key]
             #table.close() #it will trigger merger and evict all
-            table_name = table.name#
+            table_name = table.name
+            #Rest the page lock and rid lock
+            table.page_locks = None
+            table.rid_locks = None
             table_path = os.path.join(self.bufferpool.path, table_name)
             write_table(table_path, table)
-
-        #write page directory file in BufferPool
-
 
         """
         for key in self.tables.keys():
@@ -88,6 +88,7 @@ class Database():
             shutil.rmtree(name, ignore_errors=True)
         except:
             pass
+        
         if name in self.tables.keys():
             print(f'table "{name}" exists...')
             table = self.tables[name]
@@ -102,36 +103,47 @@ class Database():
     def drop_table(self, name):
         if name not in self.tables.keys():      # Check whether table named "name" in tables, if not, print alert info,else delete the table.
             print(f'table {name} not exists.')
-            return
+        # delete table file in the disk
+        try:
+            shutil.rmtree(name, ignore_errors=True)
+            print('Drop table successful')
+        except:
+            pass
+
         del self.tables[name]
+        return
 
     """
     # Returns table with the passed name
+    
+    if name in self.tables.keys():  # Check whether table named "name" in tables, if not, print alert info,else return the Table object.
+        return self.tables[name]
+    print(f'table {name} not exists.')
     """
     def get_table(self, name):
         path = self.path
         data = None
-        for filename in os.listdir(path):
-            if filename == name:
-                path = path + '/' + filename
-                fr = open(path, 'rb')
-                data = pickle.load(fr)
-                fr.close()
+
         #restore page directory
-        name = Table(data[0], data[1], data[2])
-        name.num_updates = data[3]
-        name.num_records = data[4]
-        name.page_directory = data[5]
-        name.index = data[6]
-        name.tail_index = data[7]
-        name.indirection_index = data[8]
-        name.bufferpool = data[9]
+        if name in os.listdir(path):
+            path = path + '/' + name
+            fr = open(path, 'rb')
+            data = pickle.load(fr)
+            fr.close()
+            name = Table(data[0], data[1], data[2])
+            name.num_updates = data[3]
+            name.num_records = data[4]
+            name.page_directory = data[5]
+            name.index = data[6]
+            name.tail_index = data[7]
+            name.indirection_index = data[8]
+            name.bufferpool = data[9]
+        else:
+            print(f'table {name} not exists.')
+            raise FileNotFoundError
+        
         return name
-        """
-        if name in self.tables.keys():  # Check whether table named "name" in tables, if not, print alert info,else return the Table object.
-            return self.tables[name]
-        print(f'table {name} not exists.')
-        """
+
 
 def write_table(path, table):
     f = open(path, 'wb')

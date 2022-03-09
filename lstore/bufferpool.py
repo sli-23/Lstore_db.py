@@ -4,7 +4,6 @@ import os
 from lstore.config import *
 from collections import OrderedDict
 from lstore.page import Page
-from threading import Lock
 import copy
 import time
 

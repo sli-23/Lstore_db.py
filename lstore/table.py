@@ -8,6 +8,7 @@ import threading
 from collections import deque, defaultdict
 from copy import copy
 from lstore.transaction import LockManager
+from lstore.Page_Lock import PageLocks, RidLocks
 
 class Record:
 
@@ -43,6 +44,10 @@ class Table:
         self.page_locks = defaultdict()
         self.__init_page_directory()
         self.lock_manager = LockManager()
+        #page lock + rid lock:
+        self.page_locks = None
+        self.rid_locks = None
+        self.__init_lock()
     
     def __init_page_directory(self):
         """
@@ -55,6 +60,10 @@ class Table:
         for i in range(self.num_columns + DEFAULT_COLUMN):
             self.page_directory['base']=[[MultiPage()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
             self.page_directory['tail'] = [[Page()] for _ in range(self.num_columns + DEFAULT_COLUMN)]
+
+    def __init_lock(self):
+        self.page_locks = PageLocks()
+        self.rid_locks = RidLocks()
 
     def set_merge_queue(self):
         base_page_range = 1 #update
