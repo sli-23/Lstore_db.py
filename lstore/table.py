@@ -217,7 +217,6 @@ class Table:
         return new_schema
 
     def base_write(self, data):
-        self.num_records += 1
         for i, value in enumerate(data):
             #calculate rid to get multipage, page_range, index
             #rid = number of records
@@ -228,19 +227,19 @@ class Table:
             page2 = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             
             if not multiPages.last_page(): #not the last pag
-                if not page1.has_capacity(): #page is full 
+                if not page1.has_capacity() and not page2.has_capacity(): #page is full
                     self.page_directory['base'][i][-1].add_page_index()
                     page_range_id += 1
                     page1 = multiPages.get_current()
                     page2 = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
             else:
-                if not page1.has_capacity():
+                if not page1.has_capacity() and not page2.has_capacity():
                     self.page_directory['base'][i].append(MultiPage())
                     multipage_id += 1
                     page_range_id = 0
                     page1 = self.page_directory['base'][i][-1].get_current()
                     page2 = self.bufferpool.get_page(self.name, i, multipage_id, page_range_id, 'Base_Page')
-
+            
             page1.write(value)
             page2.write(value)
             page1.dirty = True
@@ -336,9 +335,6 @@ class Table:
         tree = self.index.tree
         for base_rid in range(self.num_records):
             multipage_id, page_id, record_id = self.rid_base(base_rid)
-            
-
-        
 
     def close(self):
         self.closed = True

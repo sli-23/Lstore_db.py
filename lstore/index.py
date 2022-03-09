@@ -12,7 +12,7 @@ class Index:
 
     def __init__(self, table):
         self.table = table
-        self.indices = [BPlusTree(150) for _ in range(table.num_columns)]  # Give a default value for indices.
+        self.indices = [None for _ in range(table.num_columns)]  # Give a default value for indices.
         self.indices[self.table.key] = BPlusTree(150)
         self.tree = BPlusTree(150)
 
@@ -85,7 +85,7 @@ class Index:
 class Tail_Index:
     def __init__(self, table):
         self.table = table
-        self.index = BPlusTree(150) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
+        self.index = BPlusTree(100) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
 
     def locate(self, tail_indirection):
         return  self.index.retrieve(tail_indirection)

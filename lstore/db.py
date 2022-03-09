@@ -51,9 +51,9 @@ class Database():
         
         for key in self.tables.keys():
             table = self.tables[key]
-            print('Closing the Table...')
-            table.close()
-            table.bufferpool.evict() #close the BufferPool
+            #print('Closing the Table...')
+            #table.close()
+            #table.bufferpool.evict() #close the BufferPool
             tabledata_file = open(self.path + '/' + key + '.table', 'wb')
             pickle.dump(table, tabledata_file)
             tabledata_file.close()

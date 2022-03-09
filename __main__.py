@@ -18,6 +18,7 @@ insert_time_1 = process_time()
 print("Inserting 10k records took:  \t\t\t", insert_time_1 - insert_time_0)
 
 
+
 # Measuring Select Performance
 select_time_0 = process_time()
 for i in range(0, 10000):
