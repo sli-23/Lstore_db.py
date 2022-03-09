@@ -103,6 +103,7 @@ class Transaction:
     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
     def run(self):
         for query, args in self.queries:
+            #TODO: double check
             query_object = query.__self__
             table = query.__self__.table
             
