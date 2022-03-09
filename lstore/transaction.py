@@ -66,6 +66,7 @@ class Transaction:
         self.table = None
         self.queries = []
         self.locks = {}
+        self.aborted = False
         pass
 
     """
@@ -86,23 +87,35 @@ class Transaction:
             #using index - primary key - base_rid
             query_object = query.__self__
             base_rid = query_object.table.index.locate(query_object.table.key, args[0])
-            
+            query_keys = []
             #Query type:
             if query == query_object.select:                 
                 lock_type = 'reader'
-                self.locks[base_rid] = lock_type
+                query_keys.append(base_rid)
 
-            if query == query_object.insert:            
+            elif query == query_object.insert:            
                 lock_type = 'writer'
-            
-            if query == query_object.update:
-                lock_type = 'writer'
+                query_keys.append(base_rid)
 
-            if query == query_object.sum:
+            elif query == query_object.update:
+                lock_type = 'writer'
+                query_keys.append(base_rid)
+
+            elif query == query_object.sum:
                 lock_type = 'reader'
+                query_range = []
+                start_range = args[0]
+                end_range = args[1]
+                base_rid_lst = query_object.table.index.locate_range(start_range, end_range)[0]
+                for i in range(len(base_rid_lst)):
+                    query_keys.append(i)
 
             if query == query_object.increment:
                 lock_type = 'writer'
+                query_keys.append(args[query_object.table.key])
+            
+            for rid in query_keys:
+                self.locks[rid] = lock_type
 
         for query, args in self.queries:
             result = query(*args)
@@ -113,7 +126,8 @@ class Transaction:
 
     def abort(self):
         #TODO: do roll-back and any other necessary operations
-        return False
+        self.aborted = True
+        return
 
     def commit(self):
         # TODO: commit to database
