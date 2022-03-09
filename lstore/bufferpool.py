@@ -21,6 +21,7 @@ class BufferPool:
         self.last_rid = {} #'base': rid; 'tail':rid
         #Lock Manager
         self.get_latch = Lock()
+        page_directories = {}
         
     def initial_path(self, path):
         self.path = path

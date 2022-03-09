@@ -18,18 +18,25 @@ class Database():
     def open(self, path):
         try:
             self.path = path
-            self.bufferpool.initial_path(path)
             #restore if there
             if not os.path.exists(path):
                 os.makedirs(path)
             self.bufferpool.initial_path(path)
-            tabledata_file = open(path + '/Tables', 'wb')
-            tabledata_file.close()
+
+            tables = [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
+            #print(tables)
+            for t_name in tables:
+                t_path = os.path.join(path, t_name)
+                old_table_metas = read_table(t_path)
+                self.create_table(*old_table_metas)
+            
+            #tabledata_file = open(path + '/Tables', 'wb')
+            #tabledata_file.close()
             key_file = open(path + '/Primary_Key', 'wb')
             key_file.close()
         except:
-            tabledata_file = open(path + '/Tables', 'rb')
-            tabledata_file.close()
+            #tabledata_file = open(path + '/Tables', 'rb')
+            #tabledata_file.close()
             key_file = open(path + '/Primary_Key', 'rb')
             key_file.close()
 
@@ -40,15 +47,27 @@ class Database():
 
     def close(self):
         for name, table in self.tables.items():
-            #table.close() #it will trigger merger and evict all
             self.keydict(name, table)
         
+        #write primary key
         for key in self.primary_key.keys():
             primary_k = self.primary_key[key]
-            key_file = open(self.path + '/' + key + '.table_key', 'wb')
+            key_file = open(self.path + '/' + key + '.tableKey', 'wb')
             pickle.dump(primary_k, key_file)
             key_file.close()
         
+        #write table file
+        for key in self.tables.keys():
+            table = self.tables[key]
+            table.close() #it will trigger merger and evict all
+            table_name = table.name
+            table.merge_pid = None
+            table_path = os.path.join(self.bufferpool.path, table_name)
+            write_table(table_path, table)
+
+        #write page directory file page_directory
+
+        """
         for key in self.tables.keys():
             table = self.tables[key]
             print('Closing the Table...')
@@ -57,8 +76,8 @@ class Database():
             tabledata_file = open(self.path + '/' + key + '.table', 'wb')
             pickle.dump(table, tabledata_file)
             tabledata_file.close()
-
-        os.remove(self.path + '/' + 'Tables')
+        """
+        #os.remove(self.path + '/' + 'Tables')
         os.remove(self.path + '/' + 'Primary_Key')
 
 
@@ -97,18 +116,38 @@ class Database():
         path = self.path
         data = None
         for filename in os.listdir(path):
-            if filename[:-6] == name:
+            if filename == name:
                 path = path + '/' + filename
                 fr = open(path, 'rb')
                 data = pickle.load(fr)
                 fr.close()
-        if data == None:
-            print(f'table {name} not exists.')
-        else:
-            return data
-                    
+        #restore page directory
+        name = Table(data[0], data[1], data[2])
+        name.num_updates = data[3]
+        name.num_records = data[4]
+        name.page_directory = data[5]
+        return name
         """
         if name in self.tables.keys():  # Check whether table named "name" in tables, if not, print alert info,else return the Table object.
             return self.tables[name]
         print(f'table {name} not exists.')
         """
+
+def write_table(path, table):
+    f = open(path, 'wb')
+    metas = []
+    metas.append(table.name)
+    metas.append(table.num_columns)
+    metas.append(table.key)
+    metas.append(table.num_updates)
+    metas.append(table.num_records)
+    metas.append(table.page_directory)
+    pickle.dump(metas, f)
+    f.close()
+
+def read_table(path):
+    f = open(path, "rb")
+    metas = pickle.load(f)
+    f.close()
+
+    return metas
