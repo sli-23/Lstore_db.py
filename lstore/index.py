@@ -57,8 +57,11 @@ class Index:
             tree.delete(rid)
             tree.insert(rid, new_value)
 
-    def update_index(self):
-        pass
+    def update_index(self, column_number, key, new_value):
+        if not self.indices[column_number].has_key(key):
+            self.indices[column_number].insert(key, new_value)
+        else:
+            self.update_value(key, column_number, new_value)
 
     """
     # optional: Create index on specific column
@@ -68,11 +71,8 @@ class Index:
         tree = self.indices[column_number]
         tree.insert(key, value)
 
-    def create_index(self, column_number):
-        # create index on the non primary columns
-        if self.indices[column_number] == True:
-            print("Index existed")
-            return
+    def create_index(self, column_number): # Using table value to create a index
+        self.table.create_table_index(column_number)
 
     """
     # optional: Drop index of specific column

@@ -17,6 +17,7 @@ import shutil
 
 
 db = Database()
+db.open('./ECS165')
 grades_table = db.create_table('Grades', 5, 0)
 
 base_page = grades_table.page_directory['base']
@@ -30,11 +31,11 @@ def buffer_base(index, page_range):
         column.append(val)
     return column
 
-def buffer_tail(index):
+def buffer_tail(index, page_range):
     #table_name, column_id, page_range_id, record_id, base_or_tail
     column = []
     for i in range(len(tail_page)):
-        val = grades_table.bufferpool.get_tail_record('Grades', i, 1, index, 'Tail_Page')
+        val = grades_table.bufferpool.get_tail_record('Grades', i, page_range, index, 'Tail_Page')
         val = int.from_bytes(val, byteorder='big')
         column.append(val)
     return column
@@ -44,9 +45,9 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 512
+number_of_records = 3
 number_of_aggregates = 100
-number_of_updates = 10
+number_of_updates = 5
 
 seed(3562901)
 
@@ -54,6 +55,7 @@ for i in range(0, number_of_records):
     key = 92106429 + i
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
     query.insert(*records[key])
+    #print('inserted', records[key])
 keys = sorted(list(records.keys()))
 print("Insert finished")
 
@@ -91,12 +93,17 @@ for _ in range(number_of_updates):
                     error = True
             if error:
                 print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key], record.rid)
-                #print(buffer_base(171,0))
             else:
+                #print('update on', original, 'and', updated_columns, ':', record.columns)
                 pass
-                # print('update on', original, 'and', updated_columns, ':', record)
             updated_columns[i] = None
 print("Update finished")
+
+for i in range(number_of_records):
+    col = buffer_base(i, 0)
+    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        break
+    print(col)
 
 for i in range(0, number_of_aggregates):
     r = sorted(sample(range(0, len(keys)), 2))
@@ -111,16 +118,20 @@ print("Aggregate finished")
 
 #db.close()
 
+#print(grades_table.bufferpool.lru_cache)
+
+for i in range(grades_table.num_updates):
+    col = buffer_tail(i, 0)
+    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        break
+    print(col)
+"""
 
 for i in range(number_of_records):
     col = buffer_base(i, 0)
     if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
         break
     print(col)
+
 """
-for i in range(number_of_records * number_of_updates):
-    col = buffer_tail(i)
-    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
-        break
-    print(col)
-"""
+print(grades_table.num_updates)

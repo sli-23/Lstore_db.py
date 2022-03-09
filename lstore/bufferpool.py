@@ -8,7 +8,7 @@ from lstore.page import Page
 from threading import Lock
 import copy
 import time
-import sys
+from lstore.lock_manager import Locks
 
 class BufferPool:
     
@@ -19,6 +19,8 @@ class BufferPool:
         self.lru_cache = OrderedDict()
         self.last_tail_page = {} #
         self.last_rid = {} #'base': rid; 'tail':rid
+        #Lock Manager
+        self.get_latch = Lock()
         
     def initial_path(self, path):
         self.path = path
@@ -63,7 +65,7 @@ class BufferPool:
             self.lru_cache[buffer_id].dirty = True
 
     def get_page(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        #self.get_latch.acquire()
+        self.get_latch.acquire()
         buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = path + '.base'
@@ -85,7 +87,7 @@ class BufferPool:
                 if self.check_capacity(): #if it is full, then remove
                     self.remove_page()
                 self.lru_cache[buffer_id] = self.read_page(path)
-        #self.get_latch.release()
+        self.get_latch.release()
         return self.lru_cache[buffer_id]
 
     def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):

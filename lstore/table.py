@@ -1,16 +1,13 @@
 from concurrent.futures import thread
-from email.mime import base
-import enum
-
-from numpy import record
 from lstore.bufferpool import BufferPool
 from lstore.index import Index, Tail_Index, Indirection_Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
 import threading
-from collections import deque
+from collections import deque, defaultdict
 from copy import copy
+from lstore.lock_manager import Locks
 
 class Record:
 
@@ -43,7 +40,9 @@ class Table:
         self.bufferpool = BufferPool()
         self.mergeQ = deque()
         self.closed = False
+        self.page_locks = defaultdict(threading.Lock)
         self.__init_page_directory()
+        self.lock_manager = Locks()
     
     def __init_page_directory(self):
         """
@@ -100,9 +99,12 @@ class Table:
         return self.get_base_page_range(end_indirection) + 1
 
     def get_tail_range(self):
+        start_rid = self.mergeQ[0]
+        end_rid = self.mergeQ[-1]
         tail_rid = self.mergeQ[-1]
-        page_range, record_id = self.rid_tail(tail_rid)
-        return page_range + 1
+        start_range, record_id = self.rid_tail(start_rid)
+        end_range, record_id = self.rid_tail(tail_rid)
+        return start_range, end_range + 1
     
     def get_tail_page_range(self, column_id):
         page_range = {}
@@ -158,29 +160,30 @@ class Table:
     def merge(self):
         print("Start merging")
         # step0: wait until all concurrent merge is empty
-        # get merge range
-        tail_range = self.get_tail_range()
-        last_tail_rid = self.bufferpool.last_rid['tail']
+        tail_start_range,tail_end_range = self.get_tail_range()
+        last_tail_rid = self.mergeQ[-1]
+        #test later
         multipage_id = self.get_multipage_range(last_tail_rid)
 
         for column_id in range(self.num_columns):
             #get the base page range in that merge range
             base_page_range = self.get_base_range(4 + column_id, multipage_id)
             base_page_range_copy = copy(base_page_range)
-            # ---- START TO MERGE---- #
+ 
             update = {}
             for buffer_id in base_page_range_copy.keys():
                 table_name, column_id, multipage_id, page_range_id, base_or_tail = buffer_id
                 for record_id in range(int(RECORDS_PER_PAGE)):
                     update[(table_name, column_id, multipage_id, page_range_id, record_id, base_or_tail)] = 0
-            #('Grades', 8, 0, 0, 'Base_Page', 510)s
-            for tail_merge_range in reversed(range(tail_range)):
-                for reversed_record in reversed(range(30)):
+            
+            for tail_merge_range in reversed(range(tail_start_range, tail_end_range)):
+                for reversed_record in reversed(range(int(20))):
                     #using tail indirection to get primary key; using primary key to get base_rid
                     #if the tail indirection is NoneType, it means that that tail record is empty. if its empty, we skip.
                     try:
                         tail_indirection = self.bufferpool.get_tail_record(self.name, INDIRECTION_COLUMN, tail_merge_range, reversed_record, 'Tail_Page')
                         tail_indirection = int.from_bytes(tail_indirection, byteorder='big')
+
                         primary_key = self.indirection_index.locate(tail_indirection)[0][0]
                         tail_index = self.tail_index.locate(primary_key)[0]
                         base_rid = tail_index[2]
@@ -203,7 +206,7 @@ class Table:
                                 self.bufferpool.get_page(self.name, SCHEMA_ENCODING_COLUMN, multipage_index, page_range_index, 'Base_Page').update(record_index, new_schema)
                         update[buffer_id_base_record] = 1
                     except:
-                        continue
+                        pass
             #update
             self.bufferpool.merge_base_range(base_page_range_copy)
         update = {}
@@ -328,13 +331,39 @@ class Table:
         return column
 
     def create_table_index(self, column_number):
+        tree = self.index.tree
         # create index on the non primary columns
-        if self.index.indices[column_number] == True:
+        self.index.indices[column_number] = tree
+        # create index on the non primary columns
+        if self.indices[column_number] == True:
             print("Index existed")
             return
-        tree = self.index.tree
+        
         for base_rid in range(self.num_records):
-            multipage_id, page_id, record_id = self.rid_base(base_rid)
+            multipage_id, page_id, record_id = self.table.rid_base(base_rid)
+            #Meta data
+            base_indirection = self.bufferpool.get_record(self.name, INDIRECTION_COLUMN, multipage_id, page_id, record_id, 'Base_Page')
+            base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')
+            base_encoding = self.bufferpool.get_record(self.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_id, record_id, 'Base_Page')
+            base_encoding = int.from_bytes(base_encoding, byteorder='big')
+            #values
+            if self.schema_update_check(base_encoding, column_number): #updates
+                tail_rid = self.indirection_index.locate(base_indirection)[0][2]
+                page_range, record_index = self.rid_tail(tail_rid)
+                val = self.bufferpool.get_tail_record(self.name, DEFAULT_COLUMN + column_number, page_range, record_index, 'Tail_Page') 
+            else:
+                val = self.bufferpool.get_record(self.name, DEFAULT_COLUMN + column_number, multipage_id, page_id, record_id, 'Base_Page')
+                val = int.from_bytes(val, byteorder='big')
+            #update index
+            self.index.update_index(column_number, base_rid, val)
+
+    def base_page_lock_acquire(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
+        buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
+        self.page_locks[buffer_id].acquire()
+    
+    def base_page_lock_release(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
+        buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
+        self.page_locks[buffer_id].release()
 
     def close(self):
         self.closed = True

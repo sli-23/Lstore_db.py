@@ -12,31 +12,22 @@ class TransactionWorker:
         self.result = 0
         pass
 
-    """
-    Appends t to transactions
-    """
     def add_transaction(self, t):
         self.transactions.append(t)
 
     """
-    Runs all transaction as a thread
+    # Adds the given query to this transaction
+    # Example:
+    # q = Query(grades_table)
+    # t = Transaction()
+    # t.add_query(q.update, 0, *[None, 1, None, 2, None])
+    # transaction_worker = TransactionWorker([t])
     """
     def run(self):
-        pass
-        # here you need to create a thread and call __run
-    
-
-    """
-    Waits for the worker to finish
-    """
-    def join(self):
-        pass
-
-
-    def __run(self):
         for transaction in self.transactions:
             # each transaction returns True if committed or False if aborted
             self.stats.append(transaction.run())
         # stores the number of transactions that committed
         self.result = len(list(filter(lambda x: x, self.stats)))
+
 

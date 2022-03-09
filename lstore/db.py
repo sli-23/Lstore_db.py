@@ -51,7 +51,7 @@ class Database():
         
         for key in self.tables.keys():
             table = self.tables[key]
-            #print('Closing the Table...')
+            print('Closing the Table...')
             #table.close()
             #table.bufferpool.evict() #close the BufferPool
             tabledata_file = open(self.path + '/' + key + '.table', 'wb')
