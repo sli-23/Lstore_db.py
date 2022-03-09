@@ -1,5 +1,5 @@
 from lstore.db import Database
-from lstore.query_bplustree import Query
+from lstore.query import Query
 from xmlrpc.client import MAXINT
 import shutil
 from random import choice, randint, sample, seed

@@ -56,6 +56,7 @@ class Transaction:
     # Creates a transaction object.
     """
     def __init__(self):
+        self.table = None
         self.queries = []
         self.locks = {}
         pass
@@ -65,7 +66,7 @@ class Transaction:
     # Example:
     # q = Query(grades_table)
     # t = Transaction()
-    # t.add_query(q.update, grades_table, 0, *[None, 1, None, 2, None])
+    # t.add_query(q.update, table_name, 0, *[None, 1, None, 2, None])
     """
     def add_query(self, table, query, *args):
         self.queries.append((query, args))
@@ -75,6 +76,7 @@ class Transaction:
     # commits or False on abort
     def run(self):
         for query, args in self.queries:
+            base_rid = 
             rid = ???                               # pseudo-code
             lock = self.locks.get(rid, None)
 

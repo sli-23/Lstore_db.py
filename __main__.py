@@ -1,5 +1,5 @@
 from lstore.db import Database
-from lstore.query_bplustree import Query
+from lstore.query import Query
 from time import process_time
 from random import choice, randrange
 

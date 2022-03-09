@@ -6,7 +6,7 @@ from signal import raise_signal
 
 from numpy import rec
 from lstore.db import Database
-from lstore.query_bplustree import Query
+from lstore.query import Query
 from lstore.config import *
 from lstore.bplustree import BPlusTree
 from lstore.index import Index
