@@ -7,7 +7,7 @@ from time import time
 import threading
 from collections import deque, defaultdict
 from copy import copy
-from lstore.lock_manager import Locks
+from lstore.transaction import LockManager
 
 class Record:
 
@@ -42,7 +42,7 @@ class Table:
         self.closed = False
         self.page_locks = defaultdict()
         self.__init_page_directory()
-        self.lock_manager = Locks()
+        self.lock_manager = LockManager()
     
     def __init_page_directory(self):
         """
@@ -335,7 +335,7 @@ class Table:
         # create index on the non primary columns
         self.index.indices[column_number] = tree
         # create index on the non primary columns
-        if self.indices[column_number] == True:
+        if self.index.indices[column_number] == True:
             print("Index existed")
             return
         

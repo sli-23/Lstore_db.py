@@ -10,7 +10,6 @@ db.open('./ECS165')
 grades_table = db.get_table('Grades')
 
 query = Query(grades_table)
-
 # dictionary for records to test the database: test directory
 records = {}
 
@@ -35,7 +34,7 @@ for key in keys:
         if column != records[key][i]:
             error = True
     if error:
-        print('select error on', key, ':', record, ', correct:', records[key])
+        print('select error on', key, ':', record.columns, ', correct:', records[key])
     else:
         pass
         # print('select on', key, ':', record)

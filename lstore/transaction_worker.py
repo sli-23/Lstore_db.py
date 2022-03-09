@@ -30,4 +30,3 @@ class TransactionWorker:
         # stores the number of transactions that committed
         self.result = len(list(filter(lambda x: x, self.stats)))
 
-

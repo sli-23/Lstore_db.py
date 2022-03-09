@@ -1,4 +1,3 @@
-from functools import lru_cache
 import pickle
 from datetime import datetime
 import os
@@ -8,7 +7,6 @@ from lstore.page import Page
 from threading import Lock
 import copy
 import time
-from lstore.lock_manager import Locks
 
 class BufferPool:
     
@@ -16,12 +14,10 @@ class BufferPool:
         self.path = ""
         self.size = BUFFERPOOL_SIZE
         self.capacity = capacity
-        self.lru_cache = OrderedDict()
+        self.lru_cache = OrderedDict() #lru
         self.last_tail_page = {} #
         self.last_rid = {} #'base': rid; 'tail':rid
-        #Lock Manager
-        self.get_latch = Lock()
-        page_directories = {}
+        self.page_directories = {}#read data from file
         
     def initial_path(self, path):
         self.path = path
@@ -60,13 +56,11 @@ class BufferPool:
     def add_page(self, buffer_id, default = True):
         if default:
             self.lru_cache[buffer_id] = None
-            self.lru_cache[buffer_id] = None
         else:
             self.lru_cache[buffer_id] = Page()
             self.lru_cache[buffer_id].dirty = True
 
     def get_page(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        self.get_latch.acquire()
         buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = path + '.base'
@@ -88,7 +82,6 @@ class BufferPool:
                 if self.check_capacity(): #if it is full, then remove
                     self.remove_page()
                 self.lru_cache[buffer_id] = self.read_page(path)
-        self.get_latch.release()
         return self.lru_cache[buffer_id]
 
     def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):

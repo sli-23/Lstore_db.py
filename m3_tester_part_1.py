@@ -20,12 +20,11 @@ number_of_transactions = 100
 num_threads = 8
 
 # create index on the non primary columns
-try:
-    grades_table.index.create_index(2)
-    grades_table.index.create_index(3)
-    grades_table.index.create_index(4)
-except Exception as e:
-    print('Index API not implemented properly, tests may fail.')
+
+grades_table.index.create_index(2)
+grades_table.index.create_index(3)
+grades_table.index.create_index(4)
+
 
 keys = []
 records = {}
@@ -37,7 +36,7 @@ insert_transactions = []
 for i in range(number_of_transactions):
     insert_transactions.append(Transaction())
 
-for i in range(0, number_of_records)
+for i in range(0, number_of_records):
     key = 92106429 + i
     keys.append(key)
     records[key] = [key, randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20)]

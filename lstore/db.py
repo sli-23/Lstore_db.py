@@ -30,13 +30,9 @@ class Database():
                 old_table_metas = read_table(t_path)
                 self.create_table(*old_table_metas)
             
-            #tabledata_file = open(path + '/Tables', 'wb')
-            #tabledata_file.close()
             key_file = open(path + '/Primary_Key', 'wb')
             key_file.close()
         except:
-            #tabledata_file = open(path + '/Tables', 'rb')
-            #tabledata_file.close()
             key_file = open(path + '/Primary_Key', 'rb')
             key_file.close()
 
@@ -59,13 +55,13 @@ class Database():
         #write table file
         for key in self.tables.keys():
             table = self.tables[key]
-            table.close() #it will trigger merger and evict all
-            table_name = table.name
-            table.merge_pid = None
+            #table.close() #it will trigger merger and evict all
+            table_name = table.name#
             table_path = os.path.join(self.bufferpool.path, table_name)
             write_table(table_path, table)
 
-        #write page directory file page_directory
+        #write page directory file in BufferPool
+
 
         """
         for key in self.tables.keys():
@@ -126,6 +122,10 @@ class Database():
         name.num_updates = data[3]
         name.num_records = data[4]
         name.page_directory = data[5]
+        name.index = data[6]
+        name.tail_index = data[7]
+        name.indirection_index = data[8]
+        name.bufferpool = data[9]
         return name
         """
         if name in self.tables.keys():  # Check whether table named "name" in tables, if not, print alert info,else return the Table object.
@@ -142,6 +142,10 @@ def write_table(path, table):
     metas.append(table.num_updates)
     metas.append(table.num_records)
     metas.append(table.page_directory)
+    metas.append(table.index)
+    metas.append(table.tail_index)
+    metas.append(table.indirection_index)
+    metas.append(table.bufferpool)
     pickle.dump(metas, f)
     f.close()
 
