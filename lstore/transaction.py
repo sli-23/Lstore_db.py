@@ -1,53 +1,60 @@
 from lstore.table import Table, Record
 from lstore.index import Index
 import threading
+from readerwriterlock import rwlock
 
+"""
+Priority:
+RR
+RW - ReleaseReaderLock()
+WW - RealeaseWriterLock()
+WR - ReleaseWriterLock()
+
+Reader priority:
+rwlock.RWLockReaed()
+
+Write priority:
+rwlock.RWLockWrite()
+
+Fair priority:
+rwlock.RWLockFair()
+"""
+#RWLockFair() reading lock
 
 class Locks:
-
     def __init__(self):
-        self.lock = threading.Lock()
-        self.reading = False
-        self.writing = False
+        self.locks = {}
 
+    def check_locks(self, rid):
+        return self.locks[rid]
 
-    def readLock(self):         # get read lock
-        self.lock.acquire()
-
-        if self.writing:        # can't read if writing
-            self.lock.release()
-            return False
+    def acquire_reader(self, rid):
+        if self.check_locks(rid):
+            ReaderLock = self.locks[rid].gen_rlock()
+            success = ReaderLock.acquire(blocking=False)
+            if success:
+                return ReaderLock
+            else:
+                return None
         else:
-            self.reading = True
-            self.lock.release()
-            return True
+            self.locks[rid] = rwlock.RWLockFair()
 
-
-    def releaseReadLock(self):
-        self.lock.acquire()
-        self.reading = False
-        self.lock.release()
-
-
-    def writeLock(self):
-        self.lock.acquire()
-
-        if self.reading:        # if something is reading, can't write
-            self.lock.release()
-            return False
-        elif self.writing:      # if something else is writing, can't write
-            self.lock.release()
-            return False
+    def release_reader(self, rid):
+        return self.locks[rid].release()
+    
+    def acquire_writer(self,rid):
+        if self.check_locks(rid):
+            WriteLock = self.locks[rid].gen_wlock()
+            success = WriteLock.acquire(blocking=False)
+            if success:
+                return WriteLock
+            else:
+                return None
         else:
-            self.writing = True
-            self.lock.release()
-            return True
-
-
-    def releaseWriteLock(self):
-        self.lock.acquire()
-        self.writing = False
-        self.lock.release()
+            self.locks[rid] = rwlock.RWLockFair()
+    
+    def release_writer(self,rid):
+        return self.locks[rid].release()
 
 
 class Transaction:
@@ -76,29 +83,26 @@ class Transaction:
     # commits or False on abort
     def run(self):
         for query, args in self.queries:
-            base_rid = 
-            rid = ???                               # pseudo-code
-            lock = self.locks.get(rid, None)
+            #using index - primary key - base_rid
+            query_object = query.__self__
+            base_rid = query_object.table.index.locate(query_object.table.key, args[0])
+            
+            #Query type:
+            if query == query_object.select:                 
+                lock_type = 'reader'
+                self.locks[base_rid] = lock_type
 
-            if query == read_query:                 # pseudo-code, if query is to read
-                if lock == None:     # no lock
-                    if (get readLock == False):     # pseudo-code, if cannot get read lock, abort
-                        return self.abort()
-                    else:
-                        locks[rid] = 'r'            # mark hash map key for that rid as reading
+            if query == query_object.insert:            
+                lock_type = 'writer'
+            
+            if query == query_object.update:
+                lock_type = 'writer'
 
-            elif query == write_query:              # pseudo-code, if query is to write
-                if lock == None:     # no lock
-                    if (get writeLock == False):    # pseudo-code, if cannot get write lock, abort
-                        return self.abort()
-                    else:
-                        locks[rid] = 'w'            # mark hash map key for that rid as writing
-                elif lock == 'reading':
-                    releaseReadLock()               # pseudo-code, release the read lock
-                    if (get writeLock == False):    # pseudo-code, if cannot get write lock, abort
-                        return self.abort()
-                    else:
-                        locks[rid] = 'w'            # mark hash map key for that rid as writing
+            if query == query_object.sum:
+                lock_type = 'reader'
+
+            if query == query_object.increment:
+                lock_type = 'writer'
 
         for query, args in self.queries:
             result = query(*args)

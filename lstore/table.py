@@ -40,7 +40,7 @@ class Table:
         self.bufferpool = BufferPool()
         self.mergeQ = deque()
         self.closed = False
-        self.page_locks = defaultdict(threading.Lock)
+        self.page_locks = defaultdict()
         self.__init_page_directory()
         self.lock_manager = Locks()
     
@@ -356,14 +356,6 @@ class Table:
                 val = int.from_bytes(val, byteorder='big')
             #update index
             self.index.update_index(column_number, base_rid, val)
-
-    def base_page_lock_acquire(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
-        self.page_locks[buffer_id].acquire()
-    
-    def base_page_lock_release(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
-        self.page_locks[buffer_id].release()
 
     def close(self):
         self.closed = True

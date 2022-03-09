@@ -37,7 +37,7 @@ insert_transactions = []
 for i in range(number_of_transactions):
     insert_transactions.append(Transaction())
 
-for i in range(0, number_of_records):
+for i in range(0, number_of_records)
     key = 92106429 + i
     keys.append(key)
     records[key] = [key, randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20)]

@@ -111,11 +111,9 @@ class Query:
         multipage_id, page_range_id, record_id = self.table.rid_base(rid)
 
         # ------------- SELECT DATA BY USING BufferPool ------------- #
-        self.table.base_page_lock_acquire(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, 'Base_Page')
         base_schema_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
         base_schema_encoding = int.from_bytes(base_schema_encoding, byteorder='big')
 
-        self.table.base_page_lock_acquire(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, 'Base_Page')
         base_indirection = self.table.bufferpool.get_record(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
         base_indirection = int.from_bytes(base_indirection, byteorder='big')
         
@@ -138,8 +136,6 @@ class Query:
                     data = int.from_bytes(data, byteorder='big')
                     record.append(data)
 
-        self.table.base_page_lock_release(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, 'Base_Page')
-        self.table.base_page_lock_release(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, 'Base_Page')
         return [Record(rid, index_value, record)]
 
 
