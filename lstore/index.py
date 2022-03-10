@@ -87,8 +87,8 @@ class Tail_Index:
         self.table = table
         self.index = BPlusTree(100) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
 
-    def locate(self, tail_indirection):
-        return  self.index.retrieve(tail_indirection)
+    def locate(self, primary_key):
+        return  self.index.retrieve(primary_key)
 
     def create_index(self, key, value):
         self.index.insert(key, value)

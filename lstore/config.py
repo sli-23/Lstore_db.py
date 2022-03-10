@@ -9,7 +9,7 @@ MAXINT = 2**64 - 1
 BUFFERPOOL_SIZE = 1000 #the default buffer pool will be 1,000 pages or 4 MB
 
 # Merge
-MERGE_TRIGGER =  10000 * RECORDS_PER_PAGE
+MERGE_TRIGGER = 100000 * RECORDS_PER_PAGE
 
 # Column 
 INDIRECTION_COLUMN = 0

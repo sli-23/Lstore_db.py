@@ -1,60 +1,57 @@
-from email.mime import base
-from heapq import merge
-from operator import index
-from pickle import NONE
-from signal import raise_signal
-
-from numpy import rec
+from sre_constants import CHCODES
 from lstore.db import Database
 from lstore.query import Query
-from lstore.config import *
-from lstore.bplustree import BPlusTree
-from lstore.index import Index
+
 from random import choice, randint, sample, seed
-from xmlrpc.client import MAXINT
-import shutil
-
-
 
 db = Database()
 db.open('./ECS165')
+# Create a table  with 5 columns
+#   Student Id and 4 grades
+#   The first argument is name of the table
+#   The second argument is the number of columns
+#   The third argument is determining the which columns will be primary key
+#       Here the first column would be student id and primary key
 grades_table = db.create_table('Grades', 5, 0)
 
-base_page = grades_table.page_directory['base']
-tail_page = grades_table.page_directory['tail']
+# create a query class for the grades table
+query = Query(grades_table)
 
-def buffer_base(index, page_range):
+
+base_page = grades_table.page_directory['base']
+def buffer_base(index):
     column = []
     for i in range(len(base_page)):
-        val = grades_table.bufferpool.get_record('Grades', i, 0, page_range, index, 'Base_Page')
+        val = grades_table.bufferpool.get_record('Grades', i, 0, 0, index, 'Base_Page')
         val = int.from_bytes(val, byteorder='big')
         column.append(val)
     return column
 
-def buffer_tail(index, page_range):
+tail_page = grades_table.page_directory['tail']
+
+def buffer_tail(index):
     #table_name, column_id, page_range_id, record_id, base_or_tail
     column = []
     for i in range(len(tail_page)):
-        val = grades_table.bufferpool.get_tail_record('Grades', i, page_range, index, 'Tail_Page')
+        val = grades_table.bufferpool.get_tail_record('Grades', i, 0, index, 'Tail_Page')
         val = int.from_bytes(val, byteorder='big')
         column.append(val)
     return column
-
-query = Query(grades_table)
 
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 3
+number_of_records = 40
 number_of_aggregates = 100
 number_of_updates = 5
 
 seed(3562901)
-
+count = []
 for i in range(0, number_of_records):
     key = 92106429 + i
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
     query.insert(*records[key])
+    count.append(records[key])
     #print('inserted', records[key])
 keys = sorted(list(records.keys()))
 print("Insert finished")
@@ -72,6 +69,7 @@ for key in keys:
         pass
         # print('select on', key, ':', record)
 print("Select finished")
+
 
 # x update on every column
 for _ in range(number_of_updates):
@@ -92,18 +90,16 @@ for _ in range(number_of_updates):
                 if column != records[key][j]:
                     error = True
             if error:
-                print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key], record.rid)
+                print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
+                print(buffer_base(record.rid))
+                raise ValueError
+                #print(record.key, record.rid)
+                #print(buffer_base(record.rid))
             else:
-                #print('update on', original, 'and', updated_columns, ':', record.columns)
                 pass
+                # print('update on', original, 'and', updated_columns, ':', record)
             updated_columns[i] = None
 print("Update finished")
-
-for i in range(number_of_records):
-    col = buffer_base(i, 0)
-    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
-        break
-    print(col)
 
 for i in range(0, number_of_aggregates):
     r = sorted(sample(range(0, len(keys)), 2))
@@ -116,22 +112,40 @@ for i in range(0, number_of_aggregates):
         # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 print("Aggregate finished")
 
-#db.close()
+db.close()
 
-#print(grades_table.bufferpool.lru_cache)
 
-for i in range(grades_table.num_updates):
-    col = buffer_tail(i, 0)
-    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
-        break
-    print(col)
+
 """
+print(grades_table.mergeQ)
 
 for i in range(number_of_records):
-    col = buffer_base(i, 0)
+    col = buffer_base(i)
     if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
         break
     print(col)
 
+
+for i in range(grades_table.num_updates):
+    col = buffer_tail(i)
+    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        break
+    print(col)
+
+grades_table.merge2()
+
+for i in range(number_of_records):
+    col = buffer_base(i)
+    if col == [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        break
+    print(col)
+
+
+print(grades_table.mergeQ)
+print(grades_table.get_merged_base_page())
+
+for i in range(grades_table.num_columns):
+    base_page_range = grades_table.get_merged_base_range(4 + i)
+    print(base_page_range)
 """
-print(grades_table.num_updates)
+

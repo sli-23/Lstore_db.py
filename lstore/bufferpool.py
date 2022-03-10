@@ -12,7 +12,7 @@ class BufferPool:
     def __init__(self, capacity=BUFFERPOOL_SIZE):
         self.path = ""
         self.size = BUFFERPOOL_SIZE
-        self.capacity = capacity
+        self.capacity = BUFFERPOOL_SIZE
         self.lru_cache = OrderedDict() #lru
         self.last_tail_page = {} #
         self.last_rid = {} #'base': rid; 'tail':rid
@@ -31,7 +31,7 @@ class BufferPool:
             return False
 
     def buffer_to_path(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + str(multipage_id)+ str(page_range_id))
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(multipage_id)+ str(page_range_id))
         return path
 
     def read_page(self, path):
@@ -81,10 +81,11 @@ class BufferPool:
                 if self.check_capacity(): #if it is full, then remove
                     self.remove_page()
                 self.lru_cache[buffer_id] = self.read_page(path)
+    
         return self.lru_cache[buffer_id]
 
     def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + str(page_range_id))
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(page_range_id))
         return path
 
     def get_tail_page(self, table_name, column_id, page_range_id, base_or_tail):
