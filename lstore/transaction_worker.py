@@ -11,7 +11,7 @@ class TransactionWorker:
         self.transactions = transactions
         self.result = 0
         # new varible thread
-        self.thread = None
+        #self.thread = None
         pass
 
     """
@@ -23,22 +23,21 @@ class TransactionWorker:
     """
     Runs all transaction as a thread
     """
-    def run(self):
+    def run1(self):
         pass
         # here you need to create a thread and call __run
     
-
     """
     Done, Waits for the worker to finish
     """
     def join(self):
-        self.thread.join()
+        #self.thread.join()
         pass
 
     """
     Done
     """
-    def __run(self):
+    def run(self):
         for transaction in self.transactions:
             # each transaction returns True if committed or False if aborted
             self.stats.append(transaction.run())

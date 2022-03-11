@@ -96,14 +96,17 @@ class Transaction:
         self.locks = {}
         pass
 
-    def add_query(self, table, query, *args):
+    def add_query(self, query, table, *args):
         self.queries.append((query, args))
         # use grades_table for aborting
 
     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
     def run(self):
         for query, args in self.queries:
-            #TODO: double check
+            args = list(args)
+            print(query, args)
+            query(*args)
+            
             query_object = query.__self__
             table = query.__self__.table
             
@@ -112,7 +115,7 @@ class Transaction:
               - index.locate(column_num, key)
               - args[0] is always the primary key
             """
-            base_rid = table.index.locate(table.key, args[0])
+            base_rid = table.index.locate(table.key, args[0])[0]
             lock = self.locks.get(base_rid, None)
             
             """

@@ -107,6 +107,7 @@ class Query:
 
         # index_value will be always a key 
         # Using key to map the rid => page_indirection (multipage_id, page_range_id, record_index)
+        #print(index_value)
         rid = self.table.index.locate(self.table.key, index_value)[0] # Using primary key to get rid that is avaliable
         multipage_id, page_range_id, record_id = self.table.rid_base(rid)
 

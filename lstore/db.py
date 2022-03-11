@@ -44,13 +44,14 @@ class Database():
     def close(self):
         for name, table in self.tables.items():
             self.keydict(name, table)
-        
+        """
         #write primary key
         for key in self.primary_key.keys():
             primary_k = self.primary_key[key]
             key_file = open(self.path + '/' + key + '.tableKey', 'wb')
             pickle.dump(primary_k, key_file)
             key_file.close()
+        """
         
         #write table file
         for key in self.tables.keys():
@@ -154,9 +155,10 @@ def write_table(path, table):
     metas.append(table.num_updates)
     metas.append(table.num_records)
     metas.append(table.page_directory)
-    metas.append(table.index)
-    metas.append(table.tail_index)
-    metas.append(table.indirection_index)
+    #modified later.....
+    #metas.append(table.index)
+    #metas.append(table.tail_index)
+    #metas.append(table.indirection_index)
     metas.append(table.bufferpool)
     pickle.dump(metas, f)
     f.close()

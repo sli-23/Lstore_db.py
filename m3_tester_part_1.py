@@ -6,6 +6,7 @@ from lstore.transaction_worker import TransactionWorker
 from random import choice, randint, sample, seed
 
 db = Database()
+db.open('./ECS165')
 # creating grades table
 grades_table = db.create_table('Grades', 5, 0)
 
@@ -15,7 +16,7 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 1000
+number_of_records = 500
 number_of_transactions = 100
 num_threads = 8
 
