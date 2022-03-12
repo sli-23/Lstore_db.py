@@ -96,3 +96,5 @@ for c in range(0, grades_table.num_columns):
             # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 
 #sum error on [ 92106435 , 92106440 ]:  60 , correct:  85
+
+grades_table.merge()

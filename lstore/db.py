@@ -155,10 +155,9 @@ def write_table(path, table):
     metas.append(table.num_updates)
     metas.append(table.num_records)
     metas.append(table.page_directory)
-    #modified later.....
-    #metas.append(table.index)
-    #metas.append(table.tail_index)
-    #metas.append(table.indirection_index)
+    metas.append(table.index)
+    metas.append(table.tail_index)
+    metas.append(table.indirection_index)
     metas.append(table.bufferpool)
     pickle.dump(metas, f)
     f.close()

@@ -57,10 +57,6 @@ class Query:
         self.table.bufferpool.get_page(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, 'Base_Page').update(record_id, tail_indirection)
         self.table.bufferpool.get_page(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, 'Base_Page').update(record_id, new_schema)
 
-        # delete index
-        tree = self.table.index.indices[self.table.key]
-        tree.delete(primary_key)
-
         self.table.num_updates += 1
     
     """
@@ -226,7 +222,7 @@ class Query:
 
         #Bufferpool - last_rid
         self.table.bufferpool.set_new_rid('tail', tail_rid)
-        self.table.mergeQ.append(tail_rid)
+        self.table.mergeQ.append((base_rid, tail_rid))
         self.table.num_updates += 1
         #check merge
         self.table.mergetrigger()

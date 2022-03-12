@@ -11,16 +11,18 @@ class BufferPool:
     
     def __init__(self, capacity=BUFFERPOOL_SIZE):
         self.path = ""
-        self.size = BUFFERPOOL_SIZE
         self.capacity = BUFFERPOOL_SIZE
-        self.lru_cache = OrderedDict() #lru
-        self.last_tail_page = {} #
+        self.lru_cache = OrderedDict() #LRU to pop out page in bufferpool
         self.last_rid = {} #'base': rid; 'tail':rid
-        self.page_directories = {}#read data from file
+        self.page_directories = {} #read data from file
+        
+        #self.tps = {}  # Key: (table_name, col_index, page_range_index), value: tps
+        #self.latest_tail = {}  # Key: (table_name, col_index, page_range_index), value: lastest tail page id of specified page range
         
     def initial_path(self, path):
         self.path = path
 
+    #if the lru cache is full then it need to evict
     def check_capacity(self):
         return len(self.lru_cache) >= self.capacity
 
@@ -30,9 +32,15 @@ class BufferPool:
         except:
             return False
 
+    # buffer to path
     def buffer_to_path(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
         path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(multipage_id)+ str(page_range_id))
         return path
+
+    def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(page_range_id))
+        return path
+
 
     def read_page(self, path):
         f = open(path, 'rb')
@@ -54,8 +62,11 @@ class BufferPool:
     # if add_page, the page is dirty
     def add_page(self, buffer_id, default = True):
         if default:
+            self.page_directories[buffer_id] = None
             self.lru_cache[buffer_id] = None
         else:
+            self.page_directories[buffer_id] = Page()
+            self.page_directories[buffer_id].dirty = True
             self.lru_cache[buffer_id] = Page()
             self.lru_cache[buffer_id].dirty = True
 
@@ -63,10 +74,11 @@ class BufferPool:
         buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = path + '.base'
+        
         #new page
         if not os.path.isfile(path): #if in this path there is no such file
             if self.check_capacity():
-                self.remove_page()
+                self.remove_lru_page()
             self.add_page(buffer_id, default= False)
             
             #make a dir; just a file without any data init
@@ -79,14 +91,12 @@ class BufferPool:
             # page is already in disk
             if self.check_page_in_buffer(buffer_id) == False:
                 if self.check_capacity(): #if it is full, then remove
-                    self.remove_page()
+                    self.remove_lru_page()
+                self.page_directories[buffer_id] = self.read_page(path)
                 self.lru_cache[buffer_id] = self.read_page(path)
-    
-        return self.lru_cache[buffer_id]
+        return self.page_directories[buffer_id]
 
-    def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(page_range_id))
-        return path
+
 
     def get_tail_page(self, table_name, column_id, page_range_id, base_or_tail):
         #self.get_latch.acquire()
@@ -96,7 +106,7 @@ class BufferPool:
         #new page
         if not os.path.isfile(path): #if in this path there is no such file
             if self.check_capacity():
-                self.remove_page()
+                self.remove_lru_page()
             self.add_page(buffer_id, default= False)
             
             #make a dir; just a file without any data init
@@ -110,11 +120,12 @@ class BufferPool:
             # page is already in disk
             if not self.check_page_in_buffer(buffer_id):
                 if self.check_capacity(): #if it is full, then remove
-                    self.remove_page()
+                    self.remove_lru_page()
+                self.page_directories[buffer_id] = self.read_page(path)
                 self.lru_cache[buffer_id] = self.read_page(path)
-        #self.get_latch.release()
         return self.lru_cache[buffer_id]
 
+    #get record from bufferpool the return is bytes
     def get_record(self, table_name, column_id, multipage_id, page_range_id, record_id, base_or_tail):
         page = self.get_page(table_name, column_id, multipage_id, page_range_id, base_or_tail)      
         record_data = page.get(record_id)
@@ -126,6 +137,7 @@ class BufferPool:
         record_data = page.get(record_id)
         return record_data
 
+    # last_rid
     def set_new_rid(self, page_type,last_rid): #use it when insert record
         self.last_rid[page_type] = last_rid
     
@@ -133,6 +145,7 @@ class BufferPool:
         if len(self.lru_cache.keys()) == 0: #the bufferpool is empty, no insert or update
             return 0
 
+    # buffer id to path
     def buffer_id_path_base(self, buffer_id):
         table_name, column_id, multipage_id, page_range_id, base_or_tail = buffer_id
         path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + str(multipage_id)+ str(page_range_id) + '.base')
@@ -143,6 +156,7 @@ class BufferPool:
         path = os.path.join(self.path, table_name, base_or_tail, str(column_id)+ str(page_range_id) + '.tail')
         return path
     
+
     def evict(self):
         buffer_id_lst = list(self.lru_cache.keys())
         while len(buffer_id_lst) > 0:
@@ -159,8 +173,7 @@ class BufferPool:
                     buffer_id_lst.pop(buffer_id_lst.index(buffer_id))
             time.sleep(1)
 
-    def remove_page(self):
-        print('Start removing pages from BufferPool')
+    def remove_lru_page(self):
         buffer_id_list = list(self.lru_cache.keys())
         oldest_buffer_id = buffer_id_list[0]
 
@@ -185,11 +198,42 @@ class BufferPool:
 
         self.lru_cache[oldest_buffer_id] = None
         self.lru_cache.pop(oldest_buffer_id)
-    
-    def close(self):
-        #clean bufferpool after close the table.
-        pass
 
     def merge_base_range(self, page_range):
         for buffer_id, page in page_range.items():
             self.lru_cache[buffer_id] = page
+    
+    """
+    #tail page
+    def get_tps(self, table_name, column_id, page_range_id):
+        return self.tps[table_name][(column_id, page_range_id)]
+    
+    def set_tps(self, table_name, column_id, page_range_id, value = 0):
+        if table_name not in self.tps.keys():
+            self.tps[table_name] = {}
+        self.tps[table_name][(column_id, page_range_id)] = value
+
+    def copy_tps(self, old_tps):
+        self.tps = old_tps
+
+    def init_tps(self, table_name):
+        if table_name not in self.tps.keys():
+            self.tps[table_name] = {}
+
+    def get_latest_tail(self, table_name, column_id, page_range_id):
+        tid_counter = self.latest_tail[table_name][(column_id, page_range_id)]
+        return tid_counter
+
+    def set_latest_tail(self, table_name, column_id, page_range_id, value=0):
+        self.latest_tail[table_name][(column_id, page_range_id)] = value
+
+    def copy_latest_tail(self, old_latest_tail):
+        self.latest_tail = old_latest_tail
+
+    def init_latest_tail(self, table_name):
+        if table_name not in self.latest_tail():
+            self.latest_tail[table_name] = {}
+
+    def get_table_tails(self, table_name):
+        return self.latest_tail[table_name].keys(), self.latest_tail[table_name].values()
+    """

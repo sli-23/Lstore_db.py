@@ -42,6 +42,7 @@ for key in keys:
             error = True
     if error:
         print('select error on', key, ':', record.columns, ', correct:', records[key])
+        
 print("Select finished")
 
 
