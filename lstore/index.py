@@ -82,34 +82,13 @@ class Index:
         tree = self.indices[column_number]
         tree.delete(key)
 
-class Tail_Index:
+class RID_Index:
     def __init__(self, table):
         self.table = table
-        self.index = BPlusTree(100) #key: primary key value: (newest_tail_indirection, tail rid, base rid)
+        self.index = BPlusTree(100) #key: base_rid value: tail_rid
 
-    def locate(self, primary_key):
-        return  self.index.retrieve(primary_key)
+    def locate(self, base_rid):
+        return  self.index.retrieve(base_rid)
 
-    def create_index(self, key, value):
-        self.index.insert(key, value)
-
-    def update(self, key, new_value):
-        self.index.delete(key)
-        self.index.insert(key, new_value)
-
-    #TODO if merge then empty tail_index?
-
-class Indirection_Index:
-    def __init__(self, table):
-        self.table = table
-        self.index = BPlusTree(150) #key: indirection value: (primary key, base rid, tail)
-
-    def locate(self, indirection):
-        return  self.index.retrieve(indirection)
-
-    def create_index(self, indirection, indirection_id):
-        self.index.insert(indirection, indirection_id)
-
-    def update(self, key, new_value):
-        self.index.delete(key)
-        self.index.insert(key, new_value)
+    def create(self, base_rid, tail_rid):
+        self.index.insert(base_rid, tail_rid)

@@ -10,9 +10,6 @@ class TransactionWorker:
         self.stats = []
         self.transactions = transactions
         self.result = 0
-        # new varible thread
-        #self.thread = None
-        pass
 
     """
     Done, Appends t to transactions

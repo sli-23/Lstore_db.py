@@ -34,13 +34,12 @@ class BufferPool:
 
     # buffer to path
     def buffer_to_path(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(multipage_id)+ str(page_range_id))
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id), str(multipage_id)+ str(page_range_id))
         return path
 
     def buffer_to_path_tail(self, table_name, column_id, page_range_id, base_or_tail):
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + 'th column', str(page_range_id))
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id), str(page_range_id))
         return path
-
 
     def read_page(self, path):
         f = open(path, 'rb')
@@ -48,7 +47,7 @@ class BufferPool:
         buffer_page = Page()
         buffer_page.num_records = page.num_records
         buffer_page.data = page.data
-        f.close
+        f.close()
         return buffer_page
 
     def write_page(self, page, path):
@@ -73,7 +72,6 @@ class BufferPool:
     def get_page(self, table_name, column_id, multipage_id, page_range_id, base_or_tail):
         buffer_id = (table_name, column_id, multipage_id, page_range_id, base_or_tail)
         path = self.buffer_to_path(table_name, column_id, multipage_id, page_range_id, base_or_tail)
-        path = path + '.base'
         
         #new page
         if not os.path.isfile(path): #if in this path there is no such file
@@ -94,15 +92,13 @@ class BufferPool:
                     self.remove_lru_page()
                 self.page_directories[buffer_id] = self.read_page(path)
                 self.lru_cache[buffer_id] = self.read_page(path)
-        return self.page_directories[buffer_id]
-
+        return self.lru_cache[buffer_id]
 
 
     def get_tail_page(self, table_name, column_id, page_range_id, base_or_tail):
         #self.get_latch.acquire()
         buffer_id = (table_name, column_id, page_range_id, base_or_tail)
         path = self.buffer_to_path_tail(table_name, column_id, page_range_id, base_or_tail)
-        path = path + '.tail'
         #new page
         if not os.path.isfile(path): #if in this path there is no such file
             if self.check_capacity():
@@ -148,12 +144,12 @@ class BufferPool:
     # buffer id to path
     def buffer_id_path_base(self, buffer_id):
         table_name, column_id, multipage_id, page_range_id, base_or_tail = buffer_id
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id) + str(multipage_id)+ str(page_range_id) + '.base')
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id), str(multipage_id)+ str(page_range_id))
         return path
 
     def buffer_id_path_tail(self, buffer_id):
         table_name, column_id, page_range_id, base_or_tail = buffer_id
-        path = os.path.join(self.path, table_name, base_or_tail, str(column_id)+ str(page_range_id) + '.tail')
+        path = os.path.join(self.path, table_name, base_or_tail, str(column_id), str(page_range_id))
         return path
     
 

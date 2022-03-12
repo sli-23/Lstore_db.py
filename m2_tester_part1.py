@@ -9,10 +9,9 @@ db.open('./ECS165')
 #   Student Id and 4 grades
 #   The first argument is name of the table
 #   The second argument is the number of columns
-#   The third argument is determining the which columns will be primary key
+#   The third argument is determining the which columns will be primay key
 #       Here the first column would be student id and primary key
 grades_table = db.create_table('Grades', 5, 0)
-
 
 base_page = grades_table.page_directory['base']
 def buffer_base(index):
@@ -35,15 +34,16 @@ def buffer_tail(index):
     return column
 
 
+
 # create a query class for the grades table
 query = Query(grades_table)
 
 # dictionary for records to test the database: test directory
-records = {}#
+records = {}
 
 number_of_records = 1000
 number_of_aggregates = 100
-number_of_updates = 10
+number_of_updates = 5
 
 seed(3562901)
 
@@ -53,6 +53,7 @@ for i in range(0, number_of_records):
     query.insert(*records[key])
 keys = sorted(list(records.keys()))
 print("Insert finished")
+
 
 # Check inserted records using select query
 for key in keys:
@@ -87,7 +88,7 @@ for _ in range(number_of_updates):
                 if column != records[key][j]:
                     error = True
             if error:
-                print('update error on', original, 'and', updated_columns, ':', record.columns, ', correct:', records[key])
+                print('update error on', original, 'and', updated_columns, ':', record, ', correct:', records[key])
             else:
                 pass
                 # print('update on', original, 'and', updated_columns, ':', record)
@@ -104,6 +105,4 @@ for i in range(0, number_of_aggregates):
         pass
         # print('sum on [', keys[r[0]], ',', keys[r[1]], ']: ', column_sum)
 print("Aggregate finished")
-
 db.close()
-

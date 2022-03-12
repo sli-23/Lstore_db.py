@@ -1,7 +1,7 @@
 from concurrent.futures import thread
 from heapq import merge
 from lstore.bufferpool import BufferPool
-from lstore.index import Index, Tail_Index, Indirection_Index
+from lstore.index import Index, RID_Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
@@ -42,8 +42,7 @@ class Table:
         self.index = Index(self)
         self.index.create_index(self.key)
         # Indexing 2
-        self.tail_index = Tail_Index(self)
-        self.indirection_index = Indirection_Index(self)
+        self.rid_index = RID_Index(self)
         
         # BufferPool
         self.bufferpool = BufferPool()
@@ -86,7 +85,6 @@ class Table:
         # get current tail range from mergeQ
         start_rid = self.mergeQ[0][1]
         end_rid = self.mergeQ[-1][1]
-        print(start_rid, end_rid)
         start_range, record_id = self.rid_tail(start_rid)
         end_range, record_id = self.rid_tail(end_rid)
         
@@ -101,7 +99,7 @@ class Table:
             merge_thread = threading.Thread(target=self.merge())
             merge_thread.start()
             merge_thread.join()
-        elif merge_trigger == True:
+        if merge_trigger == True:
             merge_thread = threading.Thread(target=self.merge())
             merge_thread.start()
             merge_thread.join()
@@ -112,13 +110,16 @@ class Table:
         multipage_id, page_range_id, record_id = self.rid_base(last_base_rid)
 
         for multipage in range(multipage_id + 1):
+            if multipage == multipage_id:
+                for page_id2 in range(page_range_id + 1):
+                    buffer_id = (self.name, column_id, multipage, page_id2, 'Base_Page')
+                    page = self.bufferpool.get_page(self.name, column_id, multipage, page_id2, 'Base_Page')
+                    page_range[buffer_id] = page
+                break
             for page_id in range(MAXPAGE):
                 buffer_id = (self.name, column_id, multipage, page_id, 'Base_Page')
                 page = self.bufferpool.get_page(self.name, column_id, multipage, page_id, 'Base_Page')
                 page_range[buffer_id] = page
-                if page_id == page_range_id:
-                    break
-
         return page_range
 
     def merge(self):
@@ -141,7 +142,6 @@ class Table:
 
                 multipage_id, base_page_range_id, base_record_id = self.rid_base(base_rid)
                 buffer_id_base = (self.name, column_id,multipage_id, base_page_range_id, 'Base_Page')
-                
                 updated_val = self.bufferpool.get_tail_record(self.name, column_id, tail_page_range_id, tail_record_id, 'Tail_Page')
                 updated_val = int.from_bytes(updated_val, byteorder='big')
 
@@ -293,7 +293,7 @@ class Table:
             base_encoding = int.from_bytes(base_encoding, byteorder='big')
             #values
             if self.schema_update_check(base_encoding, column_number): #updates
-                tail_rid = self.indirection_index.locate(base_indirection)[0][2]
+                tail_rid = self.rid_index.locate(base_rid)[-1]
                 page_range, record_index = self.rid_tail(tail_rid)
                 val = self.bufferpool.get_tail_record(self.name, DEFAULT_COLUMN + column_number, page_range, record_index, 'Tail_Page') 
             else:

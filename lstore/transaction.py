@@ -103,13 +103,14 @@ class Transaction:
     # If you choose to implement this differently this method must still return True if transaction commits or False on abort
     def run(self):
         for query, args in self.queries:
-            args = list(args)
-            print(query, args)
-            query(*args)
-            
             query_object = query.__self__
             table = query.__self__.table
             
+            if query == query_object.insert:
+                args = list(args)
+                query(*args)
+            
+        
             """
             In the index, we use primary key to find base rid (when create a table, only primary key's index is allowed)
               - index.locate(column_num, key)
