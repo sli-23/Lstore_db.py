@@ -11,6 +11,7 @@ from copy import copy
 from lstore.transaction import LockManager
 from lstore.Page_Lock import PageLocks, RidLocks
 from random import choice, randint, sample, seed
+from lstore.bplustree import BPlusTree
 
 class Record:
 
@@ -123,7 +124,7 @@ class Table:
         return page_range
 
     def merge(self):
-        print('Starting merging....')
+        #print('Starting merging....')
         for column_id in range(DEFAULT_COLUMN, DEFAULT_COLUMN + self.num_columns):
             base_page_range = self.merged_base_range(column_id)
             base_page_range_copy = copy(base_page_range)
@@ -156,6 +157,7 @@ class Table:
                 break
             self.bufferpool.merge_base_range(base_page_range_copy)
         self.mergeQ.clear()
+
         return
 
     def update_schema_encoding(self, column_index, old_schema):
@@ -285,7 +287,7 @@ class Table:
             return
         
         for base_rid in range(self.num_records):
-            multipage_id, page_id, record_id = self.table.rid_base(base_rid)
+            multipage_id, page_id, record_id = self.rid_base(base_rid)
             #Meta data
             base_indirection = self.bufferpool.get_record(self.name, INDIRECTION_COLUMN, multipage_id, page_id, record_id, 'Base_Page')
             base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')
@@ -300,10 +302,19 @@ class Table:
                 val = self.bufferpool.get_record(self.name, DEFAULT_COLUMN + column_number, multipage_id, page_id, record_id, 'Base_Page')
                 val = int.from_bytes(val, byteorder='big')
             #update index
-            self.index.update_index(column_number, base_rid, val)
+            self.index.update_value(column_number, base_rid, val)
 
     def close(self):
         self.closed = True
         self.mergetrigger(merge_trigger=True)
+
+    def create_primary_key_index(self):
+        self.index.indices[self.key] = BPlusTree(150)
+        
+        rid_counter = 0
+        for key in self.key_lst:
+            self.index.create_value(self.key, key, rid_counter)
+            rid_counter += 1
+
 
     

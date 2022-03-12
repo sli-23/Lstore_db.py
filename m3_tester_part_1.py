@@ -16,16 +16,17 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 500
+number_of_records = 10
 number_of_transactions = 100
-num_threads = 8
+num_threads = 2
 
 # create index on the non primary columns
-
-grades_table.index.create_index(2)
-grades_table.index.create_index(3)
-grades_table.index.create_index(4)
-
+try:
+    grades_table.index.create_index(2)
+    grades_table.index.create_index(3)
+    grades_table.index.create_index(4)
+except:
+    pass
 
 keys = []
 records = {}
@@ -76,6 +77,5 @@ for key in keys:
         pass
         # print('select on', key, ':', record)
 print("Select finished")
-
 
 db.close()

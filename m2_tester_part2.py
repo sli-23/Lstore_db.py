@@ -15,11 +15,12 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 20
+number_of_records = 5
 number_of_aggregates = 100
 number_of_updates = 5
 
 seed(3562901)
+
 for i in range(0, number_of_records):
     key = 92106429 + i
     records[key] = [key, randint(0, 20), randint(0, 20), randint(0, 20), randint(0, 20)]
@@ -42,8 +43,6 @@ for key in keys:
             error = True
     if error:
         print('select error on', key, ':', record.columns, ', correct:', records[key])
-        print(grades_table.get_base_record(record.rid), record.rid)
-        raise ValueError
 print("Select finished")
 
 
@@ -53,11 +52,8 @@ for i in range(0, number_of_aggregates):
     result = query.sum(keys[r[0]], keys[r[1]], 0)
     if column_sum != result:
         print('sum error on [', keys[r[0]], ',', keys[r[1]], ']: ', result, ', correct: ', column_sum)
+
 print("Aggregate finished")
 
-deleted_keys = sample(keys, 100)
-for key in deleted_keys:
-    query.delete(key)
-    records.pop(key, None)
 
 db.close()

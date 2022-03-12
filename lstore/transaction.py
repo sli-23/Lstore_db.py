@@ -105,11 +105,14 @@ class Transaction:
         for query, args in self.queries:
             query_object = query.__self__
             table = query.__self__.table
-            
+
             if query == query_object.insert:
                 args = list(args)
                 query(*args)
             
+            if query == query_object.update:
+                args = list(args)
+                query(*args)
         
             """
             In the index, we use primary key to find base rid (when create a table, only primary key's index is allowed)

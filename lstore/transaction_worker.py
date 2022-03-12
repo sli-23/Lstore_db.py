@@ -10,6 +10,7 @@ class TransactionWorker:
         self.stats = []
         self.transactions = transactions
         self.result = 0
+        self.transaction_workers = []
 
     """
     Done, Appends t to transactions
@@ -21,15 +22,16 @@ class TransactionWorker:
     Runs all transaction as a thread
     """
     def run1(self):
-        pass
-        # here you need to create a thread and call __run
+        for i in self.transaction_workers:
+            print(i)
+            i.__run()
     
     """
     Done, Waits for the worker to finish
     """
     def join(self):
-        #self.thread.join()
-        pass
+        for i in range(len(self.transactions)):
+            pass
 
     """
     Done

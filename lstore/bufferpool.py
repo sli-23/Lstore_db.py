@@ -128,8 +128,7 @@ class BufferPool:
         return record_data
 
     def get_tail_record(self, table_name, column_id, page_range_id, record_id, base_or_tail):
-        buffer_id = (table_name, column_id, page_range_id, base_or_tail)
-        page = self.lru_cache[buffer_id]
+        page = self.get_tail_page(table_name, column_id, page_range_id, base_or_tail)
         record_data = page.get(record_id)
         return record_data
 

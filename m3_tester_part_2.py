@@ -17,10 +17,10 @@ query = Query(grades_table)
 # dictionary for records to test the database: test directory
 records = {}
 
-number_of_records = 1000
-number_of_transactions = 100
+number_of_records = 10
+number_of_transactions = 10
 number_of_operations_per_record = 10
-num_threads = 8
+num_threads = 2
 
 keys = []
 records = {}
@@ -31,7 +31,6 @@ for i in range(0, number_of_records):
     key = 92106429 + i
     keys.append(key)
     records[key] = [key, randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20), randint(i * 20, (i + 1) * 20)]
-    print(records[key])
 
 transaction_workers = []
 transactions = []
@@ -41,9 +40,6 @@ for i in range(number_of_transactions):
 
 for i in range(num_threads):
     transaction_workers.append(TransactionWorker())
-
-
-
 
 
 # x update on every column
@@ -62,11 +58,9 @@ for j in range(number_of_operations_per_record):
             transactions[key % number_of_transactions].add_query(query.update, grades_table, key, *updated_columns)
 print("Update finished")
 
-
 # add trasactions to transaction workers  
 for i in range(number_of_transactions):
     transaction_workers[i % num_threads].add_transaction(transactions[i])
-
 
 
 # run transaction workers

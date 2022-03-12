@@ -2,6 +2,7 @@ from lstore.table import Table
 from lstore.bufferpool import *
 from lstore.index import Index
 from lstore.config import *
+import threading
 import pickle
 import os
 import shutil
@@ -93,9 +94,16 @@ class Database():
             name.num_updates = data[3]
             name.num_records = data[4]
             name.page_directory = data[5]
-            name.index = data[6]
-            name.rid_index = data[7]
-            name.bufferpool = data[8]
+            name.bufferpool = data[6]
+            name.key_lst = data[7]
+            #name.rid_index = data[8]
+            #using key_lst to create a primary key index
+            name.create_primary_key_index()
+
+
+            #name.index = data[6]
+            #name.rid_index = data[7]
+              
         else:
             print(f'table {name} not exists.')
             raise FileNotFoundError
@@ -112,9 +120,9 @@ def write_table(path, table):
     metas.append(table.num_updates)
     metas.append(table.num_records)
     metas.append(table.page_directory)
-    metas.append(table.index)
-    metas.append(table.rid_index)
     metas.append(table.bufferpool)
+    metas.append(table.key_lst)
+    #metas.append(table.rid_index)
     pickle.dump(metas, f)
     f.close()
 
