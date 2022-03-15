@@ -1,5 +1,5 @@
 from lstore.bufferpool import BufferPool
-from lstore.index import Index, RID_Index
+from lstore.index import Index
 from lstore.config import *
 from lstore.page import Page, MultiPage
 from time import time
@@ -40,8 +40,6 @@ class Table:
         # Indexing 1
         self.index = Index(self)
         self.index.create_index(self.key)
-        # Indexing 2
-        self.rid_index = RID_Index(self)
         
         # BufferPool
         self.bufferpool = BufferPool()
@@ -283,24 +281,6 @@ class Table:
         if self.index.indices[column_number] == True:
             print("Index existed")
             return
-        
-        for base_rid in range(self.num_records):
-            multipage_id, page_id, record_id = self.rid_base(base_rid)
-            #Meta data
-            base_indirection = self.bufferpool.get_record(self.name, INDIRECTION_COLUMN, multipage_id, page_id, record_id, 'Base_Page')
-            base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')
-            base_encoding = self.bufferpool.get_record(self.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_id, record_id, 'Base_Page')
-            base_encoding = int.from_bytes(base_encoding, byteorder='big')
-            #values
-            if self.schema_update_check(base_encoding, column_number): #updates
-                tail_rid = self.rid_index.locate(base_rid)[-1]
-                page_range, record_index = self.rid_tail(tail_rid)
-                val = self.bufferpool.get_tail_record(self.name, DEFAULT_COLUMN + column_number, page_range, record_index, 'Tail_Page') 
-            else:
-                val = self.bufferpool.get_record(self.name, DEFAULT_COLUMN + column_number, multipage_id, page_id, record_id, 'Base_Page')
-                val = int.from_bytes(val, byteorder='big')
-            #update index
-            self.index.update_value(column_number, base_rid, val)
 
     def close(self):
         self.closed = True

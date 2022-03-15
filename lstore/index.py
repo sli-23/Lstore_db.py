@@ -84,14 +84,3 @@ class Index:
     def drop_index(self, column_number, key):
         tree = self.indices[column_number]
         tree.delete(key)
-
-class RID_Index:
-    def __init__(self, table):
-        self.table = table
-        self.index = BPlusTree(100) #key: base_rid value: tail_rid
-
-    def locate(self, base_rid):
-        return  self.index.retrieve(base_rid)
-
-    def create(self, base_rid, tail_rid):
-        self.index.insert(base_rid, tail_rid)

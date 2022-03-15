@@ -26,36 +26,8 @@ class Query:
     """
 
     def delete(self, primary_key):
-        delete_val = [MAXINT for _ in range(self.table.num_columns)]
-
-        base_rid = self.table.index.locate(self.table.key, primary_key)[0]
-        multipage_id, page_range_id, record_id = self.table.rid_base(base_rid)
-
-        base_indirection = self.table.bufferpool.get_record(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
-        base_indirection = int.from_bytes(base_indirection, byteorder='big')
-        base_schema_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
-        base_schema_encoding = int.from_bytes(base_schema_encoding, byteorder='big')
-        tail_rid = self.table.num_updates
-
-        if base_indirection == MAXINT:
-            base_indirection = self.table.new_base_indirection(base_indirection, base_rid, tail_rid)
-            tail_indirection = base_indirection
-        else:
-            tail_indirection = base_indirection
-
-        # update tail recording
-        curr_time = int(time())
-        new_schema = int('1'* self.table.num_columns, 2)
-        default_column = [tail_indirection, tail_rid, curr_time, new_schema]
-        default_column.extend(delete_val)
-        self.table.tail_write(default_column)
-
-        #overwrite base_indirection + schema_encoding in bufferpool
-        self.table.bufferpool.get_page(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, 'Base_Page').update(record_id, tail_indirection)
-        self.table.bufferpool.get_page(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, 'Base_Page').update(record_id, new_schema)
-
-        self.table.num_updates += 1
-    
+        pass
+       
     """
     # Insert a record with specified columns
     # Return True upon succesful insertion
@@ -171,12 +143,12 @@ class Query:
         base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')
         base_rid = self.table.bufferpool.get_record(self.table.name, RID_COLUMN, multipage_range, page_range, record_index, 'Base_Page')
         base_rid = int.from_bytes(base_rid, byteorder='big')
-
+        tail_rid = self.table.num_updates
+        
         for col, val in enumerate(columns):
             if val == None:
                 continue
             else:
-                tail_rid = self.table.num_updates
                 if base_indirection == MAXINT:
                     tail_indirection = base_indirection
                     tail_column = []
