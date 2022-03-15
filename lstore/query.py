@@ -62,6 +62,16 @@ class Query:
         self.table.num_records += 1
 
     """
+    relative version (rv):
+        - rv = 0: returns the latest version
+        - rv = -1: returns the previous version
+        - rv = -kL returns the kth previous version
+    """
+
+    def select_version(self, index_value, index_column, query_columns, relative_version): 
+        pass
+
+    """
     # Read a record with specified key
     # :param index_value: the value of index you want to search
     # :param index_column: the column number of index you want to search based on
@@ -70,9 +80,6 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
-
-    def select_version(self):
-        pass
 
     def select(self, index_value, index_column, query_columns):
         page_pointer = self.table.index.locate(index_column, index_value)
@@ -92,9 +99,9 @@ class Query:
         record = []
         for col, val in enumerate(query_columns):
             if val == 0:
-                record.append(None) #可能要改
+                record.append(None)
                 continue
-            if self.table.schema_update_check(base_schema_encoding, col): # has update
+            if self.table.schema_update_check(base_schema_encoding, col):
                 tail_page_id, tail_record_id = self.table.rid_tail(base_indirection)
                 data = self.table.bufferpool.get_tail_record(self.table.name, DEFAULT_COLUMN + col, tail_page_id, tail_record_id, 'Tail_Page')
                 data = int.from_bytes(data, byteorder='big')
@@ -149,6 +156,7 @@ class Query:
             if val == None:
                 continue
             else:
+                self.table.rid_locks.acquire_tail_lock(self.table.name, col, page_range)
                 if base_indirection == MAXINT:
                     tail_indirection = base_indirection
                     tail_column = []
@@ -161,6 +169,7 @@ class Query:
                     tail_column = self.table.get_tail_record(base_indirection)
                     tail_column[col] = val
 
+                self.table.rid_locks.release_tail_lock(self.table.name, col, page_range)
                 base_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_range, page_range, record_index, 'Base_Page')
                 base_encoding = int.from_bytes(base_encoding, byteorder='big')
                 tail_encoding = self.table.new_schema_encoding(base_encoding, col)
@@ -219,6 +228,9 @@ class Query:
                 val = int.from_bytes(val, byteorder='big')
                 sum += val
         return sum
+
+    def sum_version(self):
+        pass
 
     """
     incremenets one column of the record
