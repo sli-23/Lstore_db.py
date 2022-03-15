@@ -57,11 +57,14 @@ class Index:
             tree.delete(rid)
             tree.insert(rid, new_value)
 
-    def update_index(self, column_number, key, new_value):
-        if not self.indices[column_number].has_key(key):
-            self.indices[column_number].insert(key, new_value)
+    def update_index(self, key, pointer, column_number):
+        if self.indices[column_number].retrieve(key) == None:
+            pointers = []
+            pointers.append(pointer)
+            self.indices[column_number].insert(key, pointer)
         else:
-            self.update_value(key, column_number, new_value)
+            self.indices[column_number].delete(key)
+            self.indices[column_number].insert(key, pointer)
 
     """
     # optional: Create index on specific column

@@ -1,8 +1,3 @@
-import enum
-from operator import index
-import pickle
-from tkinter.tix import MAX
-from turtle import update
 from lstore.table import Table, Record
 from lstore.index import Index
 from lstore.config import *
@@ -20,6 +15,7 @@ class Query:
 
     def __init__(self, table):
         self.table = table
+        self.page_pointer = [0,0,0]
         pass
 
     """
@@ -76,11 +72,19 @@ class Query:
         column = list(columns)
         default_column.extend(column)
         self.table.base_write(default_column)
-        self.table.key_lst.append(columns[self.table.key]) #Using in import Primary_key
-
-        # ONLY PRIMARY KEY INDEX (key: primary key value: base_rid)
-        self.table.index.create_value(self.table.key, column[self.table.key], rid)
         
+        #Using in import Primary_key
+        self.table.key_lst.append(columns[self.table.key]) 
+
+        # update indices
+        multipage_id = rid // (RECORDS_PER_PAGE * MAXPAGE)
+        range_remainder = rid % (RECORDS_PER_PAGE * MAXPAGE)
+        self.page_pointer = [int(multipage_id), int(range_remainder//RECORDS_PER_PAGE), int(range_remainder%RECORDS_PER_PAGE)]
+
+        for i in range(self.table.num_columns):
+            if self.table.index.indices[i] != None:
+                self.table.index.update_index(columns[i], self.page_pointer, i)
+
         #bufferpool
         self.table.bufferpool.set_new_rid('base', rid)
         self.table.num_records += 1
@@ -95,17 +99,16 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
 
+    def select_version(self):
+        pass
+
     def select(self, index_value, index_column, query_columns):
-        records = [] # if there are multiple records
+        page_pointer = self.table.index.locate(index_column, index_value)
+        records_lst = [] # if there are multiple records
+        multipage_id = page_pointer[0][0]
+        page_range_id = page_pointer[0][1]
+        record_id = page_pointer[0][2]
 
-        # Check if the length of query_column is unequal to num_columns
-        if len(query_columns) != self.table.num_columns:
-            return records
-
-        rid = self.table.index.locate(index_column, index_value)[0] # Using primary key to get rid that is avaliable
-        multipage_id, page_range_id, record_id = self.table.rid_base(rid)
-
-        # ------------- SELECT DATA BY USING BufferPool ------------- #
         self.table.page_locks.acquire_page_lock(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id)
         base_schema_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
         base_schema_encoding = int.from_bytes(base_schema_encoding, byteorder='big')
@@ -113,31 +116,35 @@ class Query:
         self.table.page_locks.acquire_page_lock(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id)
         base_indirection = self.table.bufferpool.get_record(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
         base_indirection = int.from_bytes(base_indirection, byteorder='big')
-        
+
         record = []
-        record.append(index_value)
-        
-        if base_indirection != MAXINT: #the record has been updated
-            lastest_tail_rid = self.table.rid_index.locate(rid)[-1]
-            update_column = self.table.get_tail_record(lastest_tail_rid)
-        
-        for col, val, in enumerate(query_columns):
+        for col, val in enumerate(query_columns):
             if val == 0:
+                record.append(None) #可能要改
                 continue
-            if col != self.table.key:
-                if self.table.schema_update_check(base_schema_encoding, col):
-                    data = update_column[col]
-                    record.append(data)
-                else:
-                    #table_name, column_id, multipage_id, page_range_id, record_id, base_or_tail
-                    data = self.table.bufferpool.get_record(self.table.name, DEFAULT_COLUMN + col, multipage_id, page_range_id, record_id, 'Base_Page')
-                    data = int.from_bytes(data, byteorder='big')
-                    record.append(data)
+            if self.table.schema_update_check(base_schema_encoding, col): # has update
+                tail_page_id, tail_record_id = self.table.rid_tail(base_indirection)
+                data = self.table.bufferpool.get_tail_record(self.table.name, DEFAULT_COLUMN + col, tail_page_id, tail_record_id, 'Tail_Page')
+                data = int.from_bytes(data, byteorder='big')
+                record.append(data)
+            else:
+                #get base
+                data = self.table.bufferpool.get_record(self.table.name, DEFAULT_COLUMN + col, multipage_id, page_range_id, record_id, 'Base_Page')
+                data = int.from_bytes(data, byteorder='big')
+                record.append(data)
+
+
+        rid = self.table.bufferpool.get_record(self.table.name, DEFAULT_COLUMN + RID_COLUMN, multipage_id, page_range_id, record_id, 'Base_Page')
+        rid = int.from_bytes(rid, byteorder='big')
+        primary_key = self.table.bufferpool.get_record(self.table.name, DEFAULT_COLUMN + self.table.key , multipage_id, page_range_id, record_id, 'Base_Page')
+        primary_key = int.from_bytes(primary_key, byteorder='big')
+        records = Record(rid, primary_key, record)
+        records_lst.append(records)
 
         self.table.page_locks.release_page_lock(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_id, page_range_id)
         self.table.page_locks.release_page_lock(self.table.name, INDIRECTION_COLUMN, multipage_id, page_range_id)
 
-        return [Record(rid, index_value, record)]
+        return records_lst
 
 
     """
@@ -147,63 +154,56 @@ class Query:
     """
 
     def update(self, primary_key, *columns):
-        columns = list(columns)
-        
         if len(columns) != self.table.num_columns:
             print('Detect Error')
             return False
 
-        base_rid = self.table.index.locate(self.table.key, primary_key)[0]
-        multipage_range, page_range, record_index = self.table.rid_base(base_rid)
-        
+        page_pointer = self.table.index.locate(self.table.key, primary_key)
+
+        multipage_range = page_pointer[0][0]
+        page_range = page_pointer[0][1]
+        record_index = page_pointer[0][2]
+
+        #Acquire page lock
+
         # Meta data
         base_indirection = self.table.bufferpool.get_record(self.table.name, INDIRECTION_COLUMN, multipage_range, page_range, record_index, 'Base_Page')
         base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')
-        tail_rid = self.table.num_updates
-        
-        temp = 0
+        base_rid = self.table.bufferpool.get_record(self.table.name, RID_COLUMN, multipage_range, page_range, record_index, 'Base_Page')
+        base_rid = int.from_bytes(base_rid, byteorder='big')
+
         for col, val in enumerate(columns):
             if val == None:
-                temp += 1
                 continue
             else:
-                #new indirection computation:
-                self.table.rid_locks.acquire_tail_lock(self.table.name, col, page_range)
-                if base_indirection == MAXINT: # First update
-                    # compute a new base indirection
-                    base_indirection = self.table.new_base_indirection(base_indirection, base_rid, tail_rid)
+                tail_rid = self.table.num_updates
+                if base_indirection == MAXINT:
                     tail_indirection = base_indirection
                     tail_column = []
                     tail_column = [MAXINT for i in range(0, len(columns))]
+                    #print(val)
                     tail_column[col] = val
-                else: # not first updated
+                else:
                     tail_indirection = base_indirection
-                    old_tail_rid = self.table.rid_index.locate(base_rid)[-1]
-                    tail_column = self.table.get_tail_record(old_tail_rid)
+                    # get tail columns base_indirection = tid?
+                    tail_column = self.table.get_tail_record(base_indirection)
                     tail_column[col] = val
-            
-            self.table.rid_locks.release_tail_lock(self.table.name, col, page_range)
-            base_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_range, page_range, record_index, 'Base_Page')
-            base_encoding = int.from_bytes(base_encoding, byteorder='big')
-            tail_encoding = self.table.new_schema_encoding(base_encoding, col)
-        
-        # Update index
-        self.table.rid_index.create(base_rid, tail_rid)
 
-        if temp == self.table.num_columns:
-            tail_indirection = base_indirection
-            tail_encoding = self.table.bufferpool.get_page(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_range, page_range, 'Base_Page').get(record_index)
-            tail_encoding = int.from_bytes(tail_encoding, byteorder='big')
-            tail_column = [MAXINT for _ in range(self.table.num_columns)]
+                base_encoding = self.table.bufferpool.get_record(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_range, page_range, record_index, 'Base_Page')
+                base_encoding = int.from_bytes(base_encoding, byteorder='big')
+                tail_encoding = self.table.new_schema_encoding(base_encoding, col)
+                
+                curr_time = int(time())
+                meta_data =[tail_indirection, tail_rid, curr_time, tail_encoding]
+                meta_data.extend(tail_column)
+                #print(meta_data)
+                self.table.tail_write(meta_data)
 
-        curr_time = int(time())
-        default_column = [tail_indirection, tail_rid, curr_time, tail_encoding]
-        default_column.extend(tail_column)
-
-        # Overwrite base_indirection + schema_encoding in bufferpool
-        self.table.bufferpool.get_page(self.table.name, INDIRECTION_COLUMN, multipage_range, page_range, 'Base_Page').update(record_index, tail_indirection)
-        self.table.bufferpool.get_page(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_range, page_range, 'Base_Page').update(record_index, tail_encoding)
-        self.table.tail_write(default_column)
+                # Overwrite base page 
+                self.table.bufferpool.get_page(self.table.name, INDIRECTION_COLUMN, multipage_range, page_range, 'Base_Page').update(record_index, tail_rid)
+                self.table.bufferpool.get_page(self.table.name, SCHEMA_ENCODING_COLUMN, multipage_range, page_range, 'Base_Page').update(record_index, tail_encoding)
+                
+                # release page latching
 
         # BufferPool and Merge
         self.table.bufferpool.set_new_rid('tail', tail_rid)
@@ -227,8 +227,10 @@ class Query:
         sum = 0
         key_range = self.table.index.locate_range(start_range, end_range, self.table.key)
         for key in key_range:
-            rid = self.table.index.locate(self.table.key, key)[0]
-            multipage_id, page_id, record_id = self.table.rid_base(rid)
+            page_pointer = self.table.index.locate(self.table.key, key)
+            multipage_id = page_pointer[0][0]
+            page_id = page_pointer[0][1]
+            record_id = page_pointer[0][2]
 
             base_indirection = self.table.bufferpool.get_record(self.table.name, INDIRECTION_COLUMN, multipage_id, page_id, record_id, 'Base_Page')
             base_indirection = int.from_bytes(bytes(base_indirection), byteorder='big')
@@ -236,8 +238,7 @@ class Query:
             base_encoding = int.from_bytes(base_encoding, byteorder='big')
 
             if self.table.schema_update_check(base_encoding, aggregate_column_index): #has update
-                tail_rid = self.table.rid_index.locate(rid)[-1]
-                page_range, record_index = self.table.rid_tail(tail_rid)
+                page_range, record_index = self.table.rid_tail(base_indirection)
                 val = self.table.bufferpool.get_tail_record(self.table.name, DEFAULT_COLUMN + aggregate_column_index, page_range, record_index, 'Tail_Page') 
                 val = int.from_bytes(val, byteorder='big')
                 sum += val

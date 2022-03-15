@@ -1,5 +1,3 @@
-from concurrent.futures import thread
-from heapq import merge
 from lstore.bufferpool import BufferPool
 from lstore.index import Index, RID_Index
 from lstore.config import *

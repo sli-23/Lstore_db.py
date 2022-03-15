@@ -96,14 +96,8 @@ class Database():
             name.page_directory = data[5]
             name.bufferpool = data[6]
             name.key_lst = data[7]
-            #name.rid_index = data[8]
+            name.index = data[8]
             #using key_lst to create a primary key index
-            name.create_primary_key_index()
-
-
-            #name.index = data[6]
-            #name.rid_index = data[7]
-              
         else:
             print(f'table {name} not exists.')
             raise FileNotFoundError
@@ -122,7 +116,7 @@ def write_table(path, table):
     metas.append(table.page_directory)
     metas.append(table.bufferpool)
     metas.append(table.key_lst)
-    #metas.append(table.rid_index)
+    metas.append(table.index)
     pickle.dump(metas, f)
     f.close()
 
